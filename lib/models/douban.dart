@@ -210,10 +210,22 @@ class DoubanProxyConfig {
     return '$proxyUrl$originalUrl';
   }
 
-  /// Get image URL without proxy
-  /// Douban images can be accessed directly without proxy
+  /// Get image URL with proxy to bypass anti-hotlinking
   String getProxiedImageUrl(String imageUrl) {
-    // Return image URL as-is, no proxy needed
-    return imageUrl;
+    if (imageUrl.isEmpty) return imageUrl;
+
+    var proxiedUrl = imageUrl;
+
+    // Use configured proxy
+    if (useCdn) {
+      final cdnDomain = proxyUrl.replaceAll('https://m.douban.', '');
+      proxiedUrl = proxiedUrl.replaceAllMapped(
+        RegExp(r'img\d*\.doubanio\.com'),
+        (match) => 'img.doubanio.$cdnDomain',
+      );
+    }
+
+    // Change image size from m_ratio_poster to s_ratio_poster
+    return proxiedUrl.replaceAll('/m_ratio_poster/', '/s_ratio_poster/');
   }
 }

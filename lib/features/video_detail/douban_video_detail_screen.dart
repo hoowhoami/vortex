@@ -115,6 +115,7 @@ class _DoubanVideoDetailScreenState extends State<DoubanVideoDetailScreen> {
       expandedHeight: 300,
       pinned: true,
       backgroundColor: AppColors.backgroundDark,
+      foregroundColor: Colors.white,
       flexibleSpace: FlexibleSpaceBar(
         background: Stack(
           fit: StackFit.expand,
@@ -125,7 +126,7 @@ class _DoubanVideoDetailScreenState extends State<DoubanVideoDetailScreen> {
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
-                    color: AppColors.primaryMedium,
+                    color: AppColors.darkSurface,
                     child: const Icon(Icons.movie, size: 64, color: AppColors.textSecondary),
                   );
                 },
@@ -191,7 +192,9 @@ class _DoubanVideoDetailScreenState extends State<DoubanVideoDetailScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryMedium,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.darkSurfaceVariant
+                      : AppColors.lightSurfaceVariant,
                   borderRadius: BorderRadius.circular(AppConstants.radiusSm),
                 ),
                 child: Text(widget.doubanItem.year),
@@ -371,7 +374,6 @@ class _DoubanVideoDetailScreenState extends State<DoubanVideoDetailScreen> {
               final sourceName = _sourceNames[index];
               final video = _sourceVideos[sourceName]!;
               return Card(
-                color: AppColors.primaryMedium,
                 margin: const EdgeInsets.only(bottom: AppConstants.spacingMd),
                 child: ListTile(
                   leading: ClipRRect(

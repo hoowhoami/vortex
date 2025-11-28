@@ -285,7 +285,7 @@ class _HomeScreenState extends State<HomeScreen> {
               imageUrl: posterUrl,
               fit: BoxFit.cover,
               errorWidget: Container(
-                color: AppColors.primaryMedium,
+                color: AppColors.darkSurface,
                 child: const Icon(Icons.movie, size: 64, color: AppColors.textSecondary),
               ),
             ),
@@ -570,7 +570,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     imageUrl: posterUrl,
                     fit: BoxFit.cover,
                     errorWidget: Container(
-                      color: AppColors.primaryMedium,
+                      color: AppColors.darkSurface,
                       child: const Icon(Icons.movie, color: AppColors.textSecondary),
                     ),
                   ),

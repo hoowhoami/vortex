@@ -111,24 +111,11 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
   }
 
   void _playVideo(String url) {
-    if (_playInfo == null || _playInfo!.isEmpty) return;
-    if (_selectedPlaySourceIndex >= _playInfo!.episodes.length) return;
-
-    final episodes = _playInfo!.episodes[_selectedPlaySourceIndex];
-    if (_selectedEpisodeIndex >= episodes.length) return;
-
-    final episode = episodes[_selectedEpisodeIndex];
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => VideoPlayerScreen(
-          videoUrl: url,
-          videoTitle: widget.video.name,
-          episodeName: episode.name,
-        ),
-      ),
-    );
+    // Video is already playing in the embedded player at the top
+    // Just trigger a rebuild to update the player
+    setState(() {
+      // The player will automatically update based on _selectedEpisodeIndex
+    });
   }
 
   @override
@@ -208,43 +195,64 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
 
   Widget _buildAppBar(BuildContext context, AppLocalizations loc) {
     return SliverAppBar(
-      expandedHeight: 300,
+      expandedHeight: 250,
       pinned: true,
+      backgroundColor: AppColors.backgroundDark,
+      foregroundColor: Colors.white,
       flexibleSpace: FlexibleSpaceBar(
-        background: Stack(
-          fit: StackFit.expand,
-          children: [
-            CachedNetworkImage(
-              imageUrl: widget.video.backdropUrl,
-              fit: BoxFit.cover,
-              placeholder: (context, url) => Container(
-                color: AppColors.surfaceColor,
-              ),
-              errorWidget: (context, url, error) => Container(
-                color: AppColors.surfaceColor,
-                child: const Icon(
-                  Icons.movie_rounded,
-                  size: 64,
-                  color: AppColors.textTertiary,
-                ),
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Theme.of(context).scaffoldBackgroundColor,
-                  ],
-                  stops: const [0.5, 1.0],
-                ),
-              ),
-            ),
-          ],
-        ),
+        background: _buildVideoPlayerSection(),
       ),
+    );
+  }
+
+  Widget _buildVideoPlayerSection() {
+    // Check if we have valid play info
+    if (_playInfo == null || _playInfo!.isEmpty) {
+      return Container(
+        color: Colors.black,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.play_circle_outline,
+                size: 64,
+                color: Colors.white54,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _isLoading ? '加载中...' : '暂无播放源',
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Get current episode URL
+    if (_selectedPlaySourceIndex >= _playInfo!.episodes.length) {
+      return Container(color: Colors.black);
+    }
+
+    final episodes = _playInfo!.episodes[_selectedPlaySourceIndex];
+    if (_selectedEpisodeIndex >= episodes.length) {
+      return Container(color: Colors.black);
+    }
+
+    final currentEpisode = episodes[_selectedEpisodeIndex];
+
+    // Embed video player directly in the detail page
+    // Chewie's built-in fullscreen button will handle fullscreen mode
+    return VideoPlayerScreen(
+      key: ValueKey('${currentEpisode.url}_$_selectedEpisodeIndex'),
+      videoUrl: currentEpisode.url,
+      videoTitle: widget.video.name,
+      episodeName: currentEpisode.name,
+      isEmbedded: true, // Flag to indicate this is embedded mode
     );
   }
 
@@ -287,33 +295,14 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
                 ),
             ],
           ),
-          const SizedBox(height: AppConstants.spacingMd),
+          const SizedBox(height: AppConstants.spacingSm),
           Row(
             children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _playInfo != null && _playInfo!.isNotEmpty
-                      ? () {
-                          if (_playInfo!.episodes[_selectedPlaySourceIndex].isNotEmpty) {
-                            _playVideo(_playInfo!.episodes[_selectedPlaySourceIndex]
-                                    [_selectedEpisodeIndex]
-                                .url);
-                          }
-                        }
-                      : null,
-                  icon: const Icon(Icons.play_arrow_rounded),
-                  label: Text(loc.playNow),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppConstants.spacingMd),
               FutureBuilder<bool>(
                 future: favoritesService.isVideoFavorite(widget.video.id),
                 builder: (context, snapshot) {
                   final isFavorite = snapshot.data ?? false;
-                  return IconButton(
+                  return OutlinedButton.icon(
                     onPressed: () async {
                       if (isFavorite) {
                         await favoritesService
@@ -344,9 +333,13 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
                     },
                     icon: Icon(
                       isFavorite ? Icons.favorite : Icons.favorite_border,
-                      color: AppColors.accent,
+                      size: 20,
                     ),
-                    iconSize: 28,
+                    label: Text(isFavorite ? '已收藏' : '收藏'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.accent,
+                      side: const BorderSide(color: AppColors.accent),
+                    ),
                   );
                 },
               ),
@@ -363,13 +356,14 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
     required String label,
     Color? color,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: 12,
         vertical: 6,
       ),
       decoration: BoxDecoration(
-        color: (color ?? AppColors.textSecondary).withOpacity(0.1),
+        color: isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant,
         borderRadius: BorderRadius.circular(AppConstants.radiusSm),
       ),
       child: Row(
@@ -384,7 +378,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: color ?? AppColors.textSecondary,
+                  color: color ?? (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
                   fontWeight: FontWeight.w500,
                 ),
           ),
@@ -397,6 +391,8 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
     if (_sourceNames.isEmpty) {
       return const SizedBox.shrink();
     }
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -433,8 +429,9 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
                     }
                   },
                   selectedColor: AppColors.accent,
+                  backgroundColor: isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant,
                   labelStyle: TextStyle(
-                    color: isSelected ? Colors.white : AppColors.textPrimary,
+                    color: isSelected ? Colors.white : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -486,8 +483,15 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
                     }
                   },
                   selectedColor: AppColors.accent,
+                  backgroundColor: Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.darkSurfaceVariant
+                      : AppColors.lightSurfaceVariant,
                   labelStyle: TextStyle(
-                    color: isSelected ? Colors.white : AppColors.textPrimary,
+                    color: isSelected
+                        ? Colors.white
+                        : (Theme.of(context).brightness == Brightness.dark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.lightTextPrimary),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -547,7 +551,9 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppColors.accent
-                        : AppColors.surfaceColor,
+                        : (Theme.of(context).brightness == Brightness.dark
+                            ? AppColors.darkSurfaceVariant
+                            : AppColors.lightSurfaceVariant),
                     borderRadius:
                         BorderRadius.circular(AppConstants.radiusSm),
                   ),
@@ -568,7 +574,9 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: isSelected
                                   ? Colors.white
-                                  : AppColors.textPrimary,
+                                  : (Theme.of(context).brightness == Brightness.dark
+                                      ? AppColors.darkTextPrimary
+                                      : AppColors.lightTextPrimary),
                               fontWeight:
                                   isSelected ? FontWeight.w600 : FontWeight.normal,
                             ),

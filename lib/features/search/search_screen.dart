@@ -275,7 +275,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     imageUrl: posterUrl,
                     fit: BoxFit.cover,
                     errorWidget: Container(
-                      color: AppColors.primaryMedium,
+                      color: AppColors.darkSurface,
                       child: const Icon(
                         Icons.movie,
                         color: AppColors.textSecondary,

@@ -1,6 +1,5 @@
 import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -11,11 +10,13 @@ class VideoPlayerScreen extends StatefulWidget {
     required this.videoUrl,
     required this.videoTitle,
     this.episodeName,
+    this.isEmbedded = false,
   });
 
   final String videoUrl;
   final String videoTitle;
   final String? episodeName;
+  final bool isEmbedded;
 
   @override
   State<VideoPlayerScreen> createState() => _VideoPlayerScreenState();
@@ -35,79 +36,37 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   Future<void> _initializePlayer() async {
     try {
-      setState(() {
-        _isLoading = true;
-        _errorMessage = null;
-      });
-
       _videoPlayerController = VideoPlayerController.networkUrl(
         Uri.parse(widget.videoUrl),
+        httpHeaders: {
+          'User-Agent': 'Mozilla/5.0',
+          'Accept': '*/*',
+        },
+        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
       );
 
       await _videoPlayerController.initialize();
 
+      if (!_videoPlayerController.value.isInitialized) {
+        throw Exception('视频初始化失败');
+      }
+
       _chewieController = ChewieController(
         videoPlayerController: _videoPlayerController,
-        autoPlay: true,
+        autoPlay: !widget.isEmbedded,
         looping: false,
-        allowFullScreen: true,
-        allowMuting: true,
-        showControls: true,
+        aspectRatio: _videoPlayerController.value.aspectRatio,
         materialProgressColors: ChewieProgressColors(
           playedColor: AppColors.accent,
           handleColor: AppColors.accent,
-          backgroundColor: Colors.grey,
-          bufferedColor: Colors.grey.withOpacity(0.5),
         ),
-        placeholder: Container(
-          color: Colors.black,
-          child: const Center(
-            child: CircularProgressIndicator(
-              color: AppColors.accent,
-            ),
-          ),
-        ),
-        errorBuilder: (context, errorMessage) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.error_outline,
-                  color: AppColors.error,
-                  size: 48,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  '播放失败',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: Text(
-                    errorMessage,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
       );
 
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = e.toString();
+        _errorMessage = '视频源不支持\n请尝试其他视频源\n错误: ${e.toString()}';
       });
     }
   }
@@ -116,40 +75,61 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   void dispose() {
     _videoPlayerController.dispose();
     _chewieController?.dispose();
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-    ]);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // If embedded mode, return just the player without Scaffold
+    if (widget.isEmbedded) {
+      return Container(
+        color: Colors.black,
+        child: Center(
+          child: _isLoading
+              ? const CircularProgressIndicator(
+                  color: AppColors.accent,
+                )
+              : _errorMessage != null
+                  ? Text(_errorMessage!, style: const TextStyle(color: Colors.white), textAlign: TextAlign.center)
+                  : _chewieController != null
+                      ? Chewie(key: ValueKey(widget.videoUrl), controller: _chewieController!)
+                      : const SizedBox.shrink(),
+        ),
+      );
+    }
+
+    // Full screen mode with Scaffold
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
+        toolbarHeight: widget.episodeName != null ? 64 : 56,
         title: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               widget.videoTitle,
               style: const TextStyle(
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: FontWeight.w600,
+                color: Colors.white,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            if (widget.episodeName != null)
+            if (widget.episodeName != null) ...[
+              const SizedBox(height: 2),
               Text(
                 widget.episodeName!,
                 style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
+                  fontSize: 11,
+                  color: Color(0xFFB0B0B0),
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
+            ],
           ],
         ),
       ),
@@ -159,58 +139,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                 color: AppColors.accent,
               )
             : _errorMessage != null
-                ? _buildErrorWidget()
+                ? Text(_errorMessage!, style: const TextStyle(color: Colors.white), textAlign: TextAlign.center)
                 : _chewieController != null
-                    ? Chewie(controller: _chewieController!)
+                    ? Chewie(key: ValueKey(widget.videoUrl), controller: _chewieController!)
                     : const SizedBox.shrink(),
       ),
     );
   }
 
-  Widget _buildErrorWidget() {
-    return Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.error_outline,
-            color: AppColors.error,
-            size: 64,
-          ),
-          const SizedBox(height: 24),
-          Text(
-            '视频加载失败',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Colors.white,
-                ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _errorMessage ?? '未知错误',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton.icon(
-            onPressed: () {
-              _initializePlayer();
-            },
-            icon: const Icon(Icons.refresh),
-            label: const Text('重试'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accent,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 12,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
