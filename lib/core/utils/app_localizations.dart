@@ -180,7 +180,7 @@ class AppLocalizations {
       AppStrings.darkMode: '深色',
       AppStrings.systemDefault: '跟随系统',
       AppStrings.overview: '简介',
-      AppStrings.movieInfo: '电影信息',
+      AppStrings.movieInfo: '影片信息',
       AppStrings.releaseDate: '上映日期',
       AppStrings.popularity: '热度',
       AppStrings.voteCount: '评分人数',

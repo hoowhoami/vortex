@@ -90,9 +90,6 @@ class VideoService extends ChangeNotifier {
         }
       } catch (e) {
         lastError = Exception('Error from $apiUrl: $e');
-        if (kDebugMode) {
-          print('Failed to fetch from $apiUrl: $e');
-        }
         // Continue to next source
         continue;
       }
@@ -120,17 +117,9 @@ class VideoService extends ChangeNotifier {
   Stream<MapEntry<String, Video>> searchVideoAcrossSourcesStream(String videoName) async* {
     final activeSources = _apiSourceService.activeSources;
 
-    if (kDebugMode) {
-      print('开始并发搜索影片: $videoName');
-      print('启用的视频源数量: ${activeSources.length}');
-    }
-
     // Create futures for all sources
     final futures = activeSources.map((source) async {
       try {
-        if (kDebugMode) {
-          print('正在从 ${source.name} 搜索...');
-        }
 
         final queryParams = <String, String>{
           'ac': 'list',
@@ -148,17 +137,10 @@ class VideoService extends ChangeNotifier {
           final jsonData = json.decode(response.body) as Map<String, dynamic>;
           final apiResponse = VideoApiResponse.fromJson(jsonData);
 
-          if (kDebugMode) {
-            print('${source.name} 返回 ${apiResponse.list.length} 个结果');
-          }
 
           // Take first result and fetch its detail to get play URLs
           if (apiResponse.list.isNotEmpty) {
             final firstVideo = apiResponse.list.first;
-
-            if (kDebugMode) {
-              print('${source.name} 获取详情: ${firstVideo.name} (ID: ${firstVideo.id})');
-            }
 
             // Fetch detail to get play URLs
             try {
@@ -176,30 +158,13 @@ class VideoService extends ChangeNotifier {
                 final detailJson = json.decode(detailResponse.body) as Map<String, dynamic>;
                 final detailApiResponse = VideoApiResponse.fromJson(detailJson);
 
-                if (kDebugMode) {
-                  print('${source.name} 详情返回 ${detailApiResponse.list.length} 个结果');
-                }
 
                 if (detailApiResponse.list.isNotEmpty) {
                   final videoWithPlayUrl = detailApiResponse.list.first;
 
-                  if (kDebugMode) {
-                    print('${source.name} 详情数据:');
-                    print('  视频名: ${videoWithPlayUrl.name}');
-                    print('  playUrl: ${videoWithPlayUrl.playUrl}');
-                    print('  playFrom: ${videoWithPlayUrl.playFrom}');
-                    print('  playUrl长度: ${videoWithPlayUrl.playUrl?.length ?? 0}');
-                  }
 
-                  if (videoWithPlayUrl.playUrl != null && videoWithPlayUrl.playUrl!.isNotEmpty) {
-                    if (kDebugMode) {
-                      print('✓ ${source.name} 找到匹配: ${videoWithPlayUrl.name}');
-                    }
+                  if (videoWithPlayUrl.playUrl != null && videoWithPlayUrl.playUrl!.isNotEmpty) {                   
                     return MapEntry(source.name, videoWithPlayUrl);
-                  } else {
-                    if (kDebugMode) {
-                      print('✗ ${source.name} playUrl为空或null');
-                    }
                   }
                 }
               }
@@ -232,17 +197,9 @@ class VideoService extends ChangeNotifier {
   Future<Map<String, Video>> searchVideoAcrossSources(String videoName) async {
     final activeSources = _apiSourceService.activeSources;
 
-    if (kDebugMode) {
-      print('开始并发搜索影片: $videoName');
-      print('启用的视频源数量: ${activeSources.length}');
-    }
-
     // Create futures for all sources and execute concurrently
     final futures = activeSources.map((source) async {
       try {
-        if (kDebugMode) {
-          print('正在从 ${source.name} 搜索...');
-        }
 
         final queryParams = <String, String>{
           'ac': 'list',
@@ -260,17 +217,9 @@ class VideoService extends ChangeNotifier {
           final jsonData = json.decode(response.body) as Map<String, dynamic>;
           final apiResponse = VideoApiResponse.fromJson(jsonData);
 
-          if (kDebugMode) {
-            print('${source.name} 返回 ${apiResponse.list.length} 个结果');
-          }
-
           // Take first result and fetch its detail to get play URLs
           if (apiResponse.list.isNotEmpty) {
             final firstVideo = apiResponse.list.first;
-
-            if (kDebugMode) {
-              print('${source.name} 获取详情: ${firstVideo.name} (ID: ${firstVideo.id})');
-            }
 
             // Fetch detail to get play URLs
             try {
@@ -288,30 +237,11 @@ class VideoService extends ChangeNotifier {
                 final detailJson = json.decode(detailResponse.body) as Map<String, dynamic>;
                 final detailApiResponse = VideoApiResponse.fromJson(detailJson);
 
-                if (kDebugMode) {
-                  print('${source.name} 详情返回 ${detailApiResponse.list.length} 个结果');
-                }
-
                 if (detailApiResponse.list.isNotEmpty) {
                   final videoWithPlayUrl = detailApiResponse.list.first;
 
-                  if (kDebugMode) {
-                    print('${source.name} 详情数据:');
-                    print('  视频名: ${videoWithPlayUrl.name}');
-                    print('  playUrl: ${videoWithPlayUrl.playUrl}');
-                    print('  playFrom: ${videoWithPlayUrl.playFrom}');
-                    print('  playUrl长度: ${videoWithPlayUrl.playUrl?.length ?? 0}');
-                  }
-
-                  if (videoWithPlayUrl.playUrl != null && videoWithPlayUrl.playUrl!.isNotEmpty) {
-                    if (kDebugMode) {
-                      print('✓ ${source.name} 找到匹配: ${videoWithPlayUrl.name}');
-                    }
+                  if (videoWithPlayUrl.playUrl != null && videoWithPlayUrl.playUrl!.isNotEmpty) {                    
                     return MapEntry(source.name, videoWithPlayUrl);
-                  } else {
-                    if (kDebugMode) {
-                      print('✗ ${source.name} playUrl为空或null');
-                    }
                   }
                 }
               }
@@ -339,10 +269,6 @@ class VideoService extends ChangeNotifier {
       if (entry != null) {
         resultMap[entry.key] = entry.value;
       }
-    }
-
-    if (kDebugMode) {
-      print('搜索完成，找到 ${resultMap.length} 个视频源');
     }
 
     return resultMap;
@@ -384,9 +310,6 @@ class VideoService extends ChangeNotifier {
         }
       } catch (e) {
         lastError = Exception('Error from $apiUrl: $e');
-        if (kDebugMode) {
-          print('Failed to fetch categories from $apiUrl: $e');
-        }
         continue;
       }
     }

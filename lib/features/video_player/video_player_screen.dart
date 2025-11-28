@@ -1,6 +1,6 @@
-import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 
 import '../../core/theme/app_colors.dart';
 
@@ -23,43 +23,24 @@ class VideoPlayerScreen extends StatefulWidget {
 }
 
 class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
-  late VideoPlayerController _videoPlayerController;
-  ChewieController? _chewieController;
+  late final Player player;
+  late final VideoController controller;
   bool _isLoading = true;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
+    player = Player();
+    controller = VideoController(player);
     _initializePlayer();
   }
 
   Future<void> _initializePlayer() async {
     try {
-      _videoPlayerController = VideoPlayerController.networkUrl(
-        Uri.parse(widget.videoUrl),
-        httpHeaders: {
-          'User-Agent': 'Mozilla/5.0',
-          'Accept': '*/*',
-        },
-        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
-      );
-
-      await _videoPlayerController.initialize();
-
-      if (!_videoPlayerController.value.isInitialized) {
-        throw Exception('视频初始化失败');
-      }
-
-      _chewieController = ChewieController(
-        videoPlayerController: _videoPlayerController,
-        autoPlay: !widget.isEmbedded,
-        looping: false,
-        aspectRatio: _videoPlayerController.value.aspectRatio,
-        materialProgressColors: ChewieProgressColors(
-          playedColor: AppColors.accent,
-          handleColor: AppColors.accent,
-        ),
+      await player.open(
+        Media(widget.videoUrl),
+        play: !widget.isEmbedded,
       );
 
       setState(() => _isLoading = false);
@@ -73,48 +54,41 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   @override
   void dispose() {
-    _videoPlayerController.dispose();
-    _chewieController?.dispose();
+    player.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // If embedded mode, return just the player without Scaffold
     if (widget.isEmbedded) {
       return Container(
         color: Colors.black,
         child: Center(
           child: _isLoading
-              ? const CircularProgressIndicator(
-                  color: AppColors.accent,
-                )
+              ? const CircularProgressIndicator(color: AppColors.accent)
               : _errorMessage != null
                   ? Text(_errorMessage!, style: const TextStyle(color: Colors.white), textAlign: TextAlign.center)
-                  : _chewieController != null
-                      ? Chewie(key: ValueKey(widget.videoUrl), controller: _chewieController!)
-                      : const SizedBox.shrink(),
+                  : Video(controller: controller),
         ),
       );
     }
 
-    // Full screen mode with Scaffold
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        toolbarHeight: widget.episodeName != null ? 64 : 56,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               widget.videoTitle,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -122,10 +96,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
               const SizedBox(height: 2),
               Text(
                 widget.episodeName!,
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: Color(0xFFB0B0B0),
-                ),
+                style: const TextStyle(fontSize: 11, color: Color(0xFFB0B0B0)),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -135,16 +106,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       ),
       body: Center(
         child: _isLoading
-            ? const CircularProgressIndicator(
-                color: AppColors.accent,
-              )
+            ? const CircularProgressIndicator(color: AppColors.accent)
             : _errorMessage != null
                 ? Text(_errorMessage!, style: const TextStyle(color: Colors.white), textAlign: TextAlign.center)
-                : _chewieController != null
-                    ? Chewie(key: ValueKey(widget.videoUrl), controller: _chewieController!)
-                    : const SizedBox.shrink(),
+                : Video(controller: controller),
       ),
     );
   }
-
 }

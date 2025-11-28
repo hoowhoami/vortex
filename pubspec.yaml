@@ -32,8 +32,9 @@ dependencies:
   url_launcher: ^6.2.4
 
   # Video Player
-  video_player: ^2.8.2
-  chewie: ^1.7.5
+  media_kit: ^1.1.10
+  media_kit_video: ^1.2.4
+  media_kit_libs_video: ^1.0.4
 
 dev_dependencies:
   flutter_test:
@@ -42,10 +43,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
-  assets:
-    - assets/images/
-    - assets/fonts/
 
   # fonts:
   #   - family: CustomFont

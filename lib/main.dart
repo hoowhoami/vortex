@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:media_kit/media_kit.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/utils/app_localizations.dart';
@@ -20,6 +21,7 @@ import 'services/video_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  MediaKit.ensureInitialized();
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -132,45 +134,47 @@ class _MainScreenState extends State<MainScreen> {
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-          },
-          items: [
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.home_rounded),
-              activeIcon: const Icon(Icons.home_rounded),
-              label: loc.home,
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.search_rounded),
-              activeIcon: const Icon(Icons.search_rounded),
-              label: loc.search,
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.favorite_rounded),
-              activeIcon: const Icon(Icons.favorite_rounded),
-              label: loc.favorites,
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.person_rounded),
-              activeIcon: const Icon(Icons.person_rounded),
-              label: loc.profile,
-            ),
-          ],
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 10,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          child: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            items: [
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.home_rounded),
+                activeIcon: const Icon(Icons.home_rounded),
+                label: loc.home,
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.search_rounded),
+                activeIcon: const Icon(Icons.search_rounded),
+                label: loc.search,
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.favorite_rounded),
+                activeIcon: const Icon(Icons.favorite_rounded),
+                label: loc.favorites,
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.person_rounded),
+                activeIcon: const Icon(Icons.person_rounded),
+                label: loc.profile,
+              ),
+            ],
+          ),
         ),
       ),
     );

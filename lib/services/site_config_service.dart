@@ -82,7 +82,10 @@ class SiteConfigService extends ChangeNotifier {
 
   /// Get Douban proxy config
   DoubanProxyConfig getDoubanProxyConfig() {
-    return DoubanProxyConfig(type: _doubanProxyType);
+    return DoubanProxyConfig(
+      type: _doubanProxyType,
+      imageType: _doubanProxyType,
+    );
   }
 
   /// Reset to default values

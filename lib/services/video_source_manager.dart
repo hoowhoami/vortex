@@ -43,14 +43,6 @@ class VideoSourceManager {
           .where((e) => e.isNotEmpty)
           .toList();
 
-      if (kDebugMode) {
-        print('解析播放信息:');
-        print('  playFrom: ${video.playFrom}');
-        print('  playUrl: ${video.playUrl}');
-        print('  播放源数量: ${playSourceList.length}');
-        print('  URL组数量: ${playUrlGroups.length}');
-      }
-
       for (var i = 0; i < playUrlGroups.length; i++) {
         final group = playUrlGroups[i];
         final episodeList = <Episode>[];
@@ -63,9 +55,6 @@ class VideoSourceManager {
 
             // Filter out invalid URLs
             if (!_isValidPlayUrl(episodeUrl)) {
-              if (kDebugMode) {
-                print('  跳过无效URL: $episodeUrl');
-              }
               continue;
             }
 
@@ -82,15 +71,6 @@ class VideoSourceManager {
           if (i < playSourceList.length) {
             playSources.add(playSourceList[i]);
           }
-        }
-      }
-
-      if (kDebugMode) {
-        print('解析结果:');
-        print('  有效播放源: ${playSources.length}');
-        print('  集数组: ${episodes.length}');
-        for (var i = 0; i < playSources.length; i++) {
-          print('  ${playSources[i]}: ${episodes[i].length} 集');
         }
       }
     }
@@ -115,14 +95,6 @@ class VideoSourceManager {
     final playFromList = video.playFrom?.split(r'$$$') ?? [];
     final playUrlList = video.playUrl?.split(r'$$$') ?? [];
 
-    if (kDebugMode) {
-      print('底部表单播放源数据:');
-      print('  playFrom: ${video.playFrom}');
-      print('  playUrl: ${video.playUrl}');
-      print('  playFromList长度: ${playFromList.length}');
-      print('  playUrlList长度: ${playUrlList.length}');
-    }
-
     final playSources = <PlaySource>[];
 
     for (var i = 0; i < playFromList.length && i < playUrlList.length; i++) {
@@ -131,27 +103,14 @@ class VideoSourceManager {
 
       final episodes = <Episode>[];
       for (final episode in episodesData) {
-        if (kDebugMode) {
-          print('  处理集数: $episode');
-        }
         final parts = episode.split(r'$');
-        if (kDebugMode) {
-          print('    分割后: ${parts.length} 部分');
-        }
         if (parts.length >= 2) {
           final episodeName = parts[0];
           final episodeUrl = parts[1];
 
           // Filter out invalid URLs
           if (!_isValidPlayUrl(episodeUrl)) {
-            if (kDebugMode) {
-              print('    跳过无效URL: $episodeUrl');
-            }
             continue;
-          }
-
-          if (kDebugMode) {
-            print('    集数名: $episodeName, URL: $episodeUrl');
           }
           episodes.add(Episode(
             name: episodeName,

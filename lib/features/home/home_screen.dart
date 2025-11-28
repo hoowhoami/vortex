@@ -100,15 +100,9 @@ class _HomeScreenState extends State<HomeScreen> {
           _hotAnime = animeResult.list;
           _hotVariety = varietyResult.list;
           _isLoading = false;
-
-          // Debug: Print data counts and first titles
-          print('Movies: ${_hotMovies.length}, TV: ${_hotTVShows.length}, Anime: ${_hotAnime.length}, Variety: ${_hotVariety.length}');
-          if (_hotAnime.isNotEmpty) print('First Anime: ${_hotAnime.first.title}');
-          if (_hotVariety.isNotEmpty) print('First Variety: ${_hotVariety.first.title}');
         });
       }
     } catch (e) {
-      print('Error loading content: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;

@@ -109,19 +109,12 @@ class ConfigSubscriptionService extends ChangeNotifier {
         final detail = value['detail'] as String?;
 
         if (api != null && name != null) {
-          if (kDebugMode) {
-            print('Adding source: $name ($key) - API: $api');
-          }
           sources.add(ApiSource(
             id: key,
             name: name,
             apiUrl: api,
             detailUrl: detail,
           ));
-        } else {
-          if (kDebugMode) {
-            print('Skipping invalid source: $key - api: $api, name: $name');
-          }
         }
       }
     });
@@ -130,39 +123,22 @@ class ConfigSubscriptionService extends ChangeNotifier {
       throw Exception('配置中未找到有效的视频源');
     }
 
-    if (kDebugMode) {
-      print('Parsed ${sources.length} sources from configuration');
-    }
-
     // Clear existing non-default sources
     final existingSources = apiSourceService.sources.toList();
     for (final source in existingSources) {
       if (!source.isDefault) {
-        if (kDebugMode) {
-          print('Deleting existing source: ${source.name} (${source.id})');
-        }
         await apiSourceService.deleteSource(source.id);
       }
     }
 
     // Add new sources
     for (final source in sources) {
-      if (kDebugMode) {
-        print('Adding new source: ${source.name} (${source.id})');
-      }
       await apiSourceService.addSource(source);
     }
 
     // Activate the first source
     if (sources.isNotEmpty) {
-      if (kDebugMode) {
-        print('Activating source: ${sources.first.name} (${sources.first.id})');
-      }
       await apiSourceService.setActiveSource(sources.first.id);
-    }
-
-    if (kDebugMode) {
-      print('Configuration applied successfully. Total sources: ${apiSourceService.sources.length}');
     }
   }
 
@@ -185,9 +161,6 @@ class ConfigSubscriptionService extends ChangeNotifier {
       await applyConfiguration(config, apiSourceService);
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        print('Auto-update failed: $e');
-      }
       return false;
     }
   }

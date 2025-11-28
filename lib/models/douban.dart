@@ -31,17 +31,30 @@ class DoubanItem extends Equatable {
       return '';
     }
 
+    String extractPoster(dynamic data) {
+      final poster = data['poster'];
+      if (poster is String) return poster;
+
+      final cover = data['cover'];
+      if (cover is String) return cover;
+
+      final pic = data['pic'];
+      if (pic is Map) return pic['large'] as String? ?? '';
+
+      return '';
+    }
+
     return DoubanItem(
       id: json['id']?.toString() ?? '',
       title: json['title'] as String? ?? json['name'] as String? ?? '',
-      poster: json['poster'] as String? ?? json['cover'] as String? ?? json['pic']?['large'] as String? ?? '',
+      poster: extractPoster(json),
       rate: _formatRate(json['rate'] ?? json['rating']?['value']),
       year: extractYear(json),
       originalTitle: json['original_title'] as String?,
       directors: _extractList(json['directors']),
       actors: _extractList(json['actors']),
       genres: _extractList(json['genres']),
-      regions: _extractList(json['regions']),
+      regions: _extractList(json['regions'] ?? json['countries']),
       description: json['description'] as String? ?? json['intro'] as String?,
     );
   }
@@ -72,9 +85,11 @@ class DoubanItem extends Equatable {
   static String? _extractList(dynamic data) {
     if (data == null) return null;
     if (data is List) {
+      if (data.isEmpty) return null;
       return data.map((e) => e is Map ? e['name'] ?? e.toString() : e.toString()).join(', ');
     }
-    return data.toString();
+    if (data is String) return data;
+    return null;
   }
 
   Map<String, dynamic> toJson() {
@@ -170,13 +185,17 @@ class DoubanProxyConfig {
 
   const DoubanProxyConfig({
     this.type = DoubanProxyType.cmliusssCdnTencent,
+    this.imageType = DoubanProxyType.cmliusssCdnTencent,
     this.customUrl,
+    this.customImageUrl,
   });
   final DoubanProxyType type;
+  final DoubanProxyType imageType;
   final String? customUrl;
+  final String? customImageUrl;
 
-  String get proxyUrl {
-    switch (type) {
+  String _getProxyUrl(DoubanProxyType proxyType, String? customUrl) {
+    switch (proxyType) {
       case DoubanProxyType.direct:
         return '';
       case DoubanProxyType.corsProxyZwei:
@@ -192,9 +211,16 @@ class DoubanProxyConfig {
     }
   }
 
+  String get proxyUrl => _getProxyUrl(type, customUrl);
+  String get imageProxyUrl => _getProxyUrl(imageType, customImageUrl);
+
   bool get useCdn =>
       type == DoubanProxyType.cmliusssCdnTencent ||
       type == DoubanProxyType.cmliusssCdnAli;
+
+  bool get useImageCdn =>
+      imageType == DoubanProxyType.cmliusssCdnTencent ||
+      imageType == DoubanProxyType.cmliusssCdnAli;
 
   String getBaseUrl(String originalUrl) {
     if (type == DoubanProxyType.direct) {
@@ -202,30 +228,25 @@ class DoubanProxyConfig {
     }
 
     if (useCdn) {
-      // Replace douban.com with CDN domain
       return originalUrl.replaceAll('douban.com', proxyUrl.replaceAll('https://m.', ''));
     }
 
-    // For CORS proxies, prepend proxy URL
     return '$proxyUrl$originalUrl';
   }
 
-  /// Get image URL with proxy to bypass anti-hotlinking
   String getProxiedImageUrl(String imageUrl) {
     if (imageUrl.isEmpty) return imageUrl;
 
     var proxiedUrl = imageUrl;
 
-    // Use configured proxy
-    if (useCdn) {
-      final cdnDomain = proxyUrl.replaceAll('https://m.douban.', '');
+    if (useImageCdn) {
+      final cdnDomain = imageProxyUrl.replaceAll('https://m.douban.', '');
       proxiedUrl = proxiedUrl.replaceAllMapped(
         RegExp(r'img\d*\.doubanio\.com'),
         (match) => 'img.doubanio.$cdnDomain',
       );
     }
 
-    // Change image size from m_ratio_poster to s_ratio_poster
     return proxiedUrl.replaceAll('/m_ratio_poster/', '/s_ratio_poster/');
   }
 }

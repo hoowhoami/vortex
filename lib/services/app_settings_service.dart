@@ -12,21 +12,29 @@ class AppSettingsService extends ChangeNotifier {
   static const String _themeKey = 'theme_mode';
   static const String _languageKey = 'language_code';
   static const String _doubanProxyTypeKey = 'douban_proxy_type';
+  static const String _doubanImageProxyTypeKey = 'douban_image_proxy_type';
   static const String _doubanCustomProxyKey = 'douban_custom_proxy_url';
+  static const String _doubanCustomImageProxyKey = 'douban_custom_image_proxy_url';
 
   AppThemeMode _themeMode = AppThemeMode.system;
   Locale _locale = const Locale('zh');
   DoubanProxyType _doubanProxyType = DoubanProxyType.corsProxyZwei;
+  DoubanProxyType _doubanImageProxyType = DoubanProxyType.cmliusssCdnTencent;
   String? _doubanCustomProxyUrl;
+  String? _doubanCustomImageProxyUrl;
 
   AppThemeMode get themeMode => _themeMode;
   Locale get locale => _locale;
   DoubanProxyType get doubanProxyType => _doubanProxyType;
+  DoubanProxyType get doubanImageProxyType => _doubanImageProxyType;
   String? get doubanCustomProxyUrl => _doubanCustomProxyUrl;
+  String? get doubanCustomImageProxyUrl => _doubanCustomImageProxyUrl;
 
   DoubanProxyConfig get doubanProxyConfig => DoubanProxyConfig(
         type: _doubanProxyType,
+        imageType: _doubanImageProxyType,
         customUrl: _doubanCustomProxyUrl,
+        customImageUrl: _doubanCustomImageProxyUrl,
       );
 
   Future<void> _loadSettings() async {
@@ -49,15 +57,29 @@ class AppSettingsService extends ChangeNotifier {
       try {
         _doubanProxyType = DoubanProxyType.values.firstWhere(
           (e) => e.toString() == proxyTypeString,
-          orElse: () => DoubanProxyType.cmliusssCdnTencent,
+          orElse: () => DoubanProxyType.corsProxyZwei,
         );
       } catch (e) {
-        _doubanProxyType = DoubanProxyType.cmliusssCdnTencent;
+        _doubanProxyType = DoubanProxyType.corsProxyZwei;
       }
     }
 
-    // Load custom proxy URL
+    // Load Douban image proxy type
+    final imageProxyTypeString = prefs.getString(_doubanImageProxyTypeKey);
+    if (imageProxyTypeString != null) {
+      try {
+        _doubanImageProxyType = DoubanProxyType.values.firstWhere(
+          (e) => e.toString() == imageProxyTypeString,
+          orElse: () => DoubanProxyType.cmliusssCdnTencent,
+        );
+      } catch (e) {
+        _doubanImageProxyType = DoubanProxyType.cmliusssCdnTencent;
+      }
+    }
+
+    // Load custom proxy URLs
     _doubanCustomProxyUrl = prefs.getString(_doubanCustomProxyKey);
+    _doubanCustomImageProxyUrl = prefs.getString(_doubanCustomImageProxyKey);
 
     notifyListeners();
   }
@@ -86,6 +108,14 @@ class AppSettingsService extends ChangeNotifier {
     await prefs.setString(_doubanProxyTypeKey, type.toString());
   }
 
+  Future<void> setDoubanImageProxyType(DoubanProxyType type) async {
+    _doubanImageProxyType = type;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_doubanImageProxyTypeKey, type.toString());
+  }
+
   Future<void> setDoubanCustomProxyUrl(String? url) async {
     _doubanCustomProxyUrl = url;
     notifyListeners();
@@ -95,6 +125,18 @@ class AppSettingsService extends ChangeNotifier {
       await prefs.setString(_doubanCustomProxyKey, url);
     } else {
       await prefs.remove(_doubanCustomProxyKey);
+    }
+  }
+
+  Future<void> setDoubanCustomImageProxyUrl(String? url) async {
+    _doubanCustomImageProxyUrl = url;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    if (url != null && url.isNotEmpty) {
+      await prefs.setString(_doubanCustomImageProxyKey, url);
+    } else {
+      await prefs.remove(_doubanCustomImageProxyKey);
     }
   }
 

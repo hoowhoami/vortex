@@ -325,7 +325,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subtitle: const Text('启用后系统将定期自动拉取最新配置'),
             value: configService.autoUpdate,
             onChanged: configService.setAutoUpdate,
-            activeThumbColor: Colors.green,
+            activeColor: Colors.green,
           ),
           const Divider(height: 32),
           Text(
@@ -494,11 +494,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   DropdownMenuItem(
                     value: DoubanProxyType.cmliusssCdnTencent,
-                    child: Text('豆瓣 CDN By CMLiussss (腾讯云)'),
+                    child: Text('豆瓣 CDN (腾讯云)'),
                   ),
                   DropdownMenuItem(
                     value: DoubanProxyType.cmliusssCdnAli,
-                    child: Text('豆瓣 CDN By CMLiussss (阿里云)'),
+                    child: Text('豆瓣 CDN (阿里云)'),
                   ),
                   DropdownMenuItem(
                     value: DoubanProxyType.direct,
@@ -513,28 +513,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ),
+          const SizedBox(height: AppConstants.spacingMd),
+          Text(
+            '豆瓣图片代理',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: AppConstants.spacingSm),
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.withOpacity(0.3)),
+              borderRadius: BorderRadius.circular(AppConstants.radiusSm),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<DoubanProxyType>(
+                value: settingsService.doubanImageProxyType,
+                isExpanded: true,
+                padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacingMd),
+                items: const [
+                  DropdownMenuItem(
+                    value: DoubanProxyType.cmliusssCdnTencent,
+                    child: Text('豆瓣 CDN (腾讯云) (推荐)'),
+                  ),
+                  DropdownMenuItem(
+                    value: DoubanProxyType.cmliusssCdnAli,
+                    child: Text('豆瓣 CDN (阿里云)'),
+                  ),
+                  DropdownMenuItem(
+                    value: DoubanProxyType.corsProxyZwei,
+                    child: Text('CORS Proxy'),
+                  ),
+                  DropdownMenuItem(
+                    value: DoubanProxyType.direct,
+                    child: Text('直连 (可能被封)'),
+                  ),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    settingsService.setDoubanImageProxyType(value);
+                  }
+                },
+              ),
+            ),
+          ),
           const SizedBox(height: AppConstants.spacingSm),
           Text(
-            '选择获取豆瓣数据的方式',
+            'Thanks to @CMLiussss',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: Colors.blue,
                 ),
           ),
-          if (settingsService.doubanProxyType == DoubanProxyType.cmliusssCdnTencent) ...[
-            const SizedBox(height: AppConstants.spacingSm),
-            Row(
-              children: [
-                Text(
-                  'Thanks to @CMLiussss',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.blue,
-                      ),
-                ),
-                const SizedBox(width: 4),
-                const Icon(Icons.open_in_new, size: 14, color: Colors.blue),
-              ],
-            ),
-          ],
           const SizedBox(height: AppConstants.spacingMd),
           Text(
             '站点缓存存储时间 (秒)',
@@ -568,214 +595,183 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            '视频源列表',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: AppConstants.spacingMd),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '视频源列表',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('有效性检测 - Coming soon')),
+                    );
+                  },
+                  icon: const Icon(Icons.check_circle_outline, size: 18),
+                  label: const Text('检测'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: AppConstants.spacingSm),
+                  ),
+                ),
               ),
-              Row(
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('有效性检测 - Coming soon')),
-                      );
-                    },
-                    icon: const Icon(Icons.check_circle_outline, size: 18),
-                    label: const Text('有效性检测'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppConstants.spacingMd,
-                        vertical: AppConstants.spacingSm,
+              const SizedBox(width: AppConstants.spacingSm),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ApiSourceManagementScreen(),
                       ),
-                    ),
+                    );
+                  },
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('添加'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: AppConstants.spacingSm),
                   ),
-                  const SizedBox(width: AppConstants.spacingSm),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ApiSourceManagementScreen(),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('添加视频源'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppConstants.spacingMd,
-                        vertical: AppConstants.spacingSm,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
           const SizedBox(height: AppConstants.spacingMd),
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.withOpacity(0.3)),
-              borderRadius: BorderRadius.circular(AppConstants.radiusSm),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(AppConstants.spacingMd),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.1),
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(AppConstants.radiusSm),
+          Consumer<ApiSourceService>(
+            builder: (context, apiSourceService, child) {
+              if (apiSourceService.sources.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppConstants.spacingLg),
+                    child: Text(
+                      loc.noApiSources,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 40),
-                      Expanded(
-                        flex: 2,
-                        child: Text(
-                          '名称',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          'KEY',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                      ),
-                      Expanded(
-                        flex: 3,
-                        child: Text(
-                          'API 地址',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          '状态',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          '操作',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Consumer<ApiSourceService>(
-                  builder: (context, apiSourceService, child) {
-                    if (apiSourceService.sources.isEmpty) {
-                      return Padding(
-                        padding: const EdgeInsets.all(AppConstants.spacingLg),
-                        child: Text(
-                          loc.noApiSources,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                        ),
-                      );
-                    }
+                );
+              }
 
-                    return Column(
-                      children: apiSourceService.sources.map((source) {
-                        return Container(
+              return Column(
+                children: apiSourceService.sources.map((source) {
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: AppConstants.spacingMd),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                      borderRadius: BorderRadius.circular(AppConstants.radiusSm),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
                           padding: const EdgeInsets.all(AppConstants.spacingMd),
                           decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(
-                                color: Colors.grey.withOpacity(0.2),
-                              ),
+                            color: Colors.grey.withOpacity(0.1),
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(AppConstants.radiusSm),
                             ),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.drag_indicator, size: 20),
-                              const SizedBox(width: 20),
                               Expanded(
-                                flex: 2,
                                 child: Text(
                                   source.name,
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                 ),
                               ),
-                              Expanded(
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: source.isActive ? Colors.green.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
                                 child: Text(
-                                  source.id.length > 6 ? source.id.substring(0, 6) : source.id,
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                  overflow: TextOverflow.ellipsis,
+                                  source.isActive ? '已启用' : '已禁用',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: source.isActive ? Colors.green : AppColors.textSecondary,
+                                      ),
                                 ),
                               ),
-                              Expanded(
-                                flex: 3,
-                                child: Text(
-                                  source.apiUrl,
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(AppConstants.spacingMd),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  SizedBox(
+                                    width: 60,
+                                    child: Text(
+                                      'KEY:',
+                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                            color: AppColors.textSecondary,
+                                          ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      source.id,
+                                      style: Theme.of(context).textTheme.bodySmall,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              Expanded(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
+                              const SizedBox(height: AppConstants.spacingSm),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(
+                                    width: 60,
+                                    child: Text(
+                                      'API:',
+                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                            color: AppColors.textSecondary,
+                                          ),
+                                    ),
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: source.isActive ? Colors.green.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(4),
+                                  Expanded(
+                                    child: Text(
+                                      source.apiUrl,
+                                      style: Theme.of(context).textTheme.bodySmall,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
-                                  child: Text(
-                                    source.isActive ? '已启用' : '已禁用',
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          color: source.isActive ? Colors.green : AppColors.textSecondary,
-                                        ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
+                                ],
                               ),
-                              Expanded(
-                                child: TextButton(
+                              const SizedBox(height: AppConstants.spacingMd),
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton(
                                   onPressed: () {
                                     apiSourceService.toggleSourceActive(source.id);
                                   },
-                                  style: TextButton.styleFrom(
+                                  style: OutlinedButton.styleFrom(
                                     foregroundColor: source.isActive ? Colors.red : Colors.green,
-                                    padding: EdgeInsets.zero,
                                   ),
                                   child: Text(source.isActive ? '禁用' : '启用'),
                                 ),
                               ),
                             ],
                           ),
-                        );
-                      }).toList(),
-                    );
-                  },
-                ),
-              ],
-            ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              );
+            },
           ),
         ],
       ),

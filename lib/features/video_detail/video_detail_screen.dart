@@ -37,6 +37,8 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
 
   bool _isLoading = true;
   String? _errorMessage;
+  bool _isInfoExpanded = false;
+  bool _isDescriptionExpanded = false;
 
   @override
   void initState() {
@@ -45,6 +47,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
   }
 
   Future<void> _loadVideoFromAllSources() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -55,12 +58,8 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
       final sourceManager = VideoSourceManager(videoService);
       final results = await sourceManager.searchVideoSources(widget.video.name);
 
-      print('搜索结果: ${results.length} 个视频源找到了影片');
-      print('视频源: ${results.keys.join(", ")}');
-
+      if (!mounted) return;
       if (results.isEmpty) {
-        // 如果没有找到，使用原始视频数据作为后备
-        print('未找到视频源，使用原始数据');
         if (widget.video.playUrl != null && widget.video.playUrl!.isNotEmpty) {
           setState(() {
             _sourceVideos = {'原始数据': widget.video};
@@ -87,7 +86,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
 
       _parsePlayInfoForSource(_sourceNames[0]);
     } catch (e) {
-      print('加载失败: $e');
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _errorMessage = '加载失败: $e';
@@ -103,6 +102,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
     final sourceManager = VideoSourceManager(videoService);
     final playInfo = sourceManager.parsePlayInfo(video);
 
+    if (!mounted) return;
     setState(() {
       _playInfo = playInfo;
       _selectedPlaySourceIndex = 0;
@@ -113,6 +113,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
   void _playVideo(String url) {
     // Video is already playing in the embedded player at the top
     // Just trigger a rebuild to update the player
+    if (!mounted) return;
     setState(() {
       // The player will automatically update based on _selectedEpisodeIndex
     });
@@ -124,83 +125,68 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          _buildAppBar(context, loc),
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(context, loc, isDark),
-                const SizedBox(height: AppConstants.spacingLg),
-                if (_isLoading)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(AppConstants.spacingXl),
-                      child: CircularProgressIndicator(
-                        color: AppColors.accent,
-                      ),
-                    ),
-                  )
-                else if (_errorMessage != null)
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppConstants.spacingXl),
-                      child: Column(
-                        children: [
-                          const Icon(
-                            Icons.error_outline,
-                            size: 48,
-                            color: AppColors.error,
-                          ),
-                          const SizedBox(height: AppConstants.spacingMd),
-                          Text(
-                            _errorMessage!,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: AppConstants.spacingMd),
-                          ElevatedButton.icon(
-                            onPressed: _loadVideoFromAllSources,
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('重试'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                else ...[
-                  if (_sourceNames.isNotEmpty) ...[
-                    _buildSourceSelection(context, loc),
-                    const SizedBox(height: AppConstants.spacingMd),
-                  ],
-                  if (_playInfo != null && _playInfo!.isNotEmpty) ...[
-                    _buildPlaySources(context, loc),
-                    const SizedBox(height: AppConstants.spacingMd),
-                    _buildEpisodes(context, loc),
-                    const SizedBox(height: AppConstants.spacingLg),
-                  ],
-                  _buildInfo(context, loc, isDark),
-                  const SizedBox(height: AppConstants.spacingLg),
-                  _buildDescription(context, loc, isDark),
-                  const SizedBox(height: AppConstants.spacingXl),
-                ],
-              ],
-            ),
-          ),
-        ],
+      appBar: AppBar(
+        title: Text(widget.video.name),
       ),
-    );
-  }
-
-  Widget _buildAppBar(BuildContext context, AppLocalizations loc) {
-    return SliverAppBar(
-      expandedHeight: 250,
-      pinned: true,
-      backgroundColor: AppColors.backgroundDark,
-      foregroundColor: Colors.white,
-      flexibleSpace: FlexibleSpaceBar(
-        background: _buildVideoPlayerSection(),
+      body: ListView(
+        children: [
+          _buildVideoPlayerSection(),
+          const SizedBox(height: AppConstants.spacingLg),
+          _buildHeader(context, loc, isDark),
+          const SizedBox(height: AppConstants.spacingLg),
+          if (_isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(AppConstants.spacingXl),
+                child: CircularProgressIndicator(
+                  color: AppColors.accent,
+                ),
+              ),
+            )
+          else if (_errorMessage != null)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(AppConstants.spacingXl),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: AppColors.error,
+                    ),
+                    const SizedBox(height: AppConstants.spacingMd),
+                    Text(
+                      _errorMessage!,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppConstants.spacingMd),
+                    ElevatedButton.icon(
+                      onPressed: _loadVideoFromAllSources,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('重试'),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else ...[
+            if (_sourceNames.isNotEmpty) ...[
+              _buildSourceSelection(context, loc),
+              const SizedBox(height: AppConstants.spacingMd),
+            ],
+            if (_playInfo != null && _playInfo!.isNotEmpty) ...[
+              _buildPlaySources(context, loc),
+              const SizedBox(height: AppConstants.spacingMd),
+              _buildEpisodes(context, loc),
+              const SizedBox(height: AppConstants.spacingLg),
+            ],
+            _buildInfo(context, loc, isDark),
+            const SizedBox(height: AppConstants.spacingLg),
+            _buildDescription(context, loc, isDark),
+            const SizedBox(height: AppConstants.spacingXl),
+          ],
+        ],
       ),
     );
   }
@@ -209,6 +195,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
     // Check if we have valid play info
     if (_playInfo == null || _playInfo!.isEmpty) {
       return Container(
+        height: 250,
         color: Colors.black,
         child: Center(
           child: Column(
@@ -235,24 +222,27 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
 
     // Get current episode URL
     if (_selectedPlaySourceIndex >= _playInfo!.episodes.length) {
-      return Container(color: Colors.black);
+      return Container(height: 250, color: Colors.black);
     }
 
     final episodes = _playInfo!.episodes[_selectedPlaySourceIndex];
     if (_selectedEpisodeIndex >= episodes.length) {
-      return Container(color: Colors.black);
+      return Container(height: 250, color: Colors.black);
     }
 
     final currentEpisode = episodes[_selectedEpisodeIndex];
 
     // Embed video player directly in the detail page
     // Chewie's built-in fullscreen button will handle fullscreen mode
-    return VideoPlayerScreen(
-      key: ValueKey('${currentEpisode.url}_$_selectedEpisodeIndex'),
-      videoUrl: currentEpisode.url,
-      videoTitle: widget.video.name,
-      episodeName: currentEpisode.name,
-      isEmbedded: true, // Flag to indicate this is embedded mode
+    return SizedBox(
+      height: 250,
+      child: VideoPlayerScreen(
+        key: ValueKey('${currentEpisode.url}_$_selectedEpisodeIndex'),
+        videoUrl: currentEpisode.url,
+        videoTitle: widget.video.name,
+        episodeName: currentEpisode.name,
+        isEmbedded: true, // Flag to indicate this is embedded mode
+      ),
     );
   }
 
@@ -392,54 +382,74 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
       return const SizedBox.shrink();
     }
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: AppConstants.spacingMd),
-          child: Text(
-            '视频源',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-        ),
-        const SizedBox(height: AppConstants.spacingSm),
-        SizedBox(
-          height: 40,
-          child: ListView.builder(
-            padding:
-                const EdgeInsets.symmetric(horizontal: AppConstants.spacingMd),
-            scrollDirection: Axis.horizontal,
-            itemCount: _sourceNames.length,
-            itemBuilder: (context, index) {
-              final isSelected = index == _selectedSourceIndex;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  label: Text(_sourceNames[index]),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    if (selected) {
-                      setState(() {
-                        _selectedSourceIndex = index;
-                      });
-                      _parsePlayInfoForSource(_sourceNames[index]);
-                    }
-                  },
-                  selectedColor: AppColors.accent,
-                  backgroundColor: isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant,
-                  labelStyle: TextStyle(
-                    color: isSelected ? Colors.white : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
-                    fontWeight: FontWeight.w500,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacingMd),
+      child: InkWell(
+        onTap: () {
+          showModalBottomSheet(
+            context: context,
+            builder: (context) => Container(
+              padding: const EdgeInsets.all(AppConstants.spacingMd),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('视频源', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: AppConstants.spacingMd),
+                  Expanded(
+                    child: GridView.builder(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        childAspectRatio: 2.5,
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 8,
+                      ),
+                      itemCount: _sourceNames.length,
+                      itemBuilder: (context, index) {
+                        final isSelected = index == _selectedSourceIndex;
+                        return InkWell(
+                          onTap: () {
+                            setState(() {
+                              _selectedSourceIndex = index;
+                            });
+                            _parsePlayInfoForSource(_sourceNames[index]);
+                            Navigator.pop(context);
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isSelected ? AppColors.accent : Colors.grey.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              _sourceNames[index],
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : null,
+                                fontWeight: isSelected ? FontWeight.bold : null,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
-              );
-            },
+                ],
+              ),
+            ),
+          );
+        },
+        child: InputDecorator(
+          decoration: const InputDecoration(
+            labelText: '视频源',
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            suffixIcon: Icon(Icons.arrow_drop_down),
           ),
+          child: Text(_sourceNames[_selectedSourceIndex]),
         ),
-      ],
+      ),
     );
   }
 
@@ -448,58 +458,74 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
       return const SizedBox.shrink();
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: AppConstants.spacingMd),
-          child: Text(
-            loc.selectSource,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-        ),
-        const SizedBox(height: AppConstants.spacingSm),
-        SizedBox(
-          height: 40,
-          child: ListView.builder(
-            padding:
-                const EdgeInsets.symmetric(horizontal: AppConstants.spacingMd),
-            scrollDirection: Axis.horizontal,
-            itemCount: _playInfo!.playSources.length,
-            itemBuilder: (context, index) {
-              final isSelected = index == _selectedPlaySourceIndex;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  label: Text(_playInfo!.playSources[index]),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    if (selected) {
-                      setState(() {
-                        _selectedPlaySourceIndex = index;
-                        _selectedEpisodeIndex = 0;
-                      });
-                    }
-                  },
-                  selectedColor: AppColors.accent,
-                  backgroundColor: Theme.of(context).brightness == Brightness.dark
-                      ? AppColors.darkSurfaceVariant
-                      : AppColors.lightSurfaceVariant,
-                  labelStyle: TextStyle(
-                    color: isSelected
-                        ? Colors.white
-                        : (Theme.of(context).brightness == Brightness.dark
-                            ? AppColors.darkTextPrimary
-                            : AppColors.lightTextPrimary),
-                    fontWeight: FontWeight.w500,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacingMd),
+      child: InkWell(
+        onTap: () {
+          showModalBottomSheet(
+            context: context,
+            builder: (context) => Container(
+              padding: const EdgeInsets.all(AppConstants.spacingMd),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(loc.selectSource, style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: AppConstants.spacingMd),
+                  Expanded(
+                    child: GridView.builder(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        childAspectRatio: 2.5,
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 8,
+                      ),
+                      itemCount: _playInfo!.playSources.length,
+                      itemBuilder: (context, index) {
+                        final isSelected = index == _selectedPlaySourceIndex;
+                        return InkWell(
+                          onTap: () {
+                            setState(() {
+                              _selectedPlaySourceIndex = index;
+                              _selectedEpisodeIndex = 0;
+                            });
+                            Navigator.pop(context);
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isSelected ? AppColors.accent : Colors.grey.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              _playInfo!.playSources[index],
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : null,
+                                fontWeight: isSelected ? FontWeight.bold : null,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
-              );
-            },
+                ],
+              ),
+            ),
+          );
+        },
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: loc.selectSource,
+            border: const OutlineInputBorder(),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            suffixIcon: const Icon(Icons.arrow_drop_down),
           ),
+          child: Text(_playInfo!.playSources[_selectedPlaySourceIndex]),
         ),
-      ],
+      ),
     );
   }
 
@@ -516,87 +542,87 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
 
     final episodes = _playInfo!.episodes[_selectedPlaySourceIndex];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: AppConstants.spacingMd),
-          child: Text(
-            loc.selectEpisode,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-        ),
-        const SizedBox(height: AppConstants.spacingSm),
-        Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: AppConstants.spacingMd),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: List.generate(episodes.length, (index) {
-              final isSelected = index == _selectedEpisodeIndex;
-              return InkWell(
-                onTap: () {
-                  setState(() {
-                    _selectedEpisodeIndex = index;
-                  });
-                  _playVideo(episodes[index].url);
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.accent
-                        : (Theme.of(context).brightness == Brightness.dark
-                            ? AppColors.darkSurfaceVariant
-                            : AppColors.lightSurfaceVariant),
-                    borderRadius:
-                        BorderRadius.circular(AppConstants.radiusSm),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (isSelected)
-                        const Padding(
-                          padding: EdgeInsets.only(right: 4),
-                          child: Icon(
-                            Icons.play_arrow,
-                            size: 16,
-                            color: Colors.white,
-                          ),
-                        ),
-                      Text(
-                        episodes[index].name,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: isSelected
-                                  ? Colors.white
-                                  : (Theme.of(context).brightness == Brightness.dark
-                                      ? AppColors.darkTextPrimary
-                                      : AppColors.lightTextPrimary),
-                              fontWeight:
-                                  isSelected ? FontWeight.w600 : FontWeight.normal,
-                            ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacingMd),
+      child: InkWell(
+        onTap: () {
+          showModalBottomSheet(
+            context: context,
+            builder: (context) => Container(
+              padding: const EdgeInsets.all(AppConstants.spacingMd),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(loc.selectEpisode, style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: AppConstants.spacingMd),
+                  Expanded(
+                    child: GridView.builder(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 4,
+                        childAspectRatio: 2,
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 8,
                       ),
-                    ],
+                      itemCount: episodes.length,
+                      itemBuilder: (context, index) {
+                        final isSelected = index == _selectedEpisodeIndex;
+                        return InkWell(
+                          onTap: () {
+                            setState(() {
+                              _selectedEpisodeIndex = index;
+                            });
+                            _playVideo(episodes[index].url);
+                            Navigator.pop(context);
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isSelected ? AppColors.accent : Colors.grey.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              episodes[index].name,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : null,
+                                fontWeight: isSelected ? FontWeight.bold : null,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
-              );
-            }),
+                ],
+              ),
+            ),
+          );
+        },
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: loc.selectEpisode,
+            border: const OutlineInputBorder(),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            suffixIcon: const Icon(Icons.arrow_drop_down),
           ),
+          child: Text(episodes[_selectedEpisodeIndex].name),
         ),
-      ],
+      ),
     );
   }
 
   Widget _buildInfo(BuildContext context, AppLocalizations loc, bool isDark) {
-    // Use current selected source video if available, otherwise use original
     final video = _sourceNames.isNotEmpty && _selectedSourceIndex < _sourceNames.length
         ? _sourceVideos[_sourceNames[_selectedSourceIndex]] ?? widget.video
         : widget.video;
+
+    final infoItems = <Widget>[];
+    if (video.typeList.isNotEmpty) infoItems.add(_buildInfoRow(context, loc.genre, video.typeList.join(', ')));
+    if (video.directorList.isNotEmpty) infoItems.add(_buildInfoRow(context, loc.director, video.directorList.join(', ')));
+    if (video.actorList.isNotEmpty) infoItems.add(_buildInfoRow(context, loc.cast, video.actorList.join(', ')));
+    if (video.area != null && video.area!.isNotEmpty) infoItems.add(_buildInfoRow(context, loc.area, video.area!));
+    if (video.lang != null && video.lang!.isNotEmpty) infoItems.add(_buildInfoRow(context, loc.language, video.lang!));
+    if (video.displayYear.isNotEmpty) infoItems.add(_buildInfoRow(context, loc.year, video.displayYear));
+    if (video.displayRemarks.isNotEmpty) infoItems.add(_buildInfoRow(context, loc.updated, video.displayRemarks));
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppConstants.spacingMd),
@@ -608,26 +634,23 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            loc.movieInfo,
-            style: Theme.of(context).textTheme.titleMedium,
+          InkWell(
+            onTap: () => setState(() => _isInfoExpanded = !_isInfoExpanded),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(loc.movieInfo, style: Theme.of(context).textTheme.titleMedium),
+                Icon(_isInfoExpanded ? Icons.expand_less : Icons.expand_more),
+              ],
+            ),
           ),
-          const SizedBox(height: AppConstants.spacingMd),
-          if (video.typeList.isNotEmpty)
-            _buildInfoRow(context, loc.genre, video.typeList.join(', ')),
-          if (video.directorList.isNotEmpty)
-            _buildInfoRow(
-                context, loc.director, video.directorList.join(', ')),
-          if (video.actorList.isNotEmpty)
-            _buildInfoRow(context, loc.cast, video.actorList.join(', ')),
-          if (video.area != null && video.area!.isNotEmpty)
-            _buildInfoRow(context, loc.area, video.area!),
-          if (video.lang != null && video.lang!.isNotEmpty)
-            _buildInfoRow(context, loc.language, video.lang!),
-          if (video.displayYear.isNotEmpty)
-            _buildInfoRow(context, loc.year, video.displayYear),
-          if (video.displayRemarks.isNotEmpty)
-            _buildInfoRow(context, loc.updated, video.displayRemarks),
+          if (_isInfoExpanded) ...[
+            const SizedBox(height: AppConstants.spacingMd),
+            ...infoItems,
+          ] else if (infoItems.isNotEmpty) ...[
+            const SizedBox(height: AppConstants.spacingMd),
+            infoItems.first,
+          ],
         ],
       ),
     );
@@ -661,7 +684,6 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
 
   Widget _buildDescription(
       BuildContext context, AppLocalizations loc, bool isDark) {
-    // Use current selected source video if available, otherwise use original
     final video = _sourceNames.isNotEmpty && _selectedSourceIndex < _sourceNames.length
         ? _sourceVideos[_sourceNames[_selectedSourceIndex]] ?? widget.video
         : widget.video;
@@ -680,16 +702,22 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            loc.overview,
-            style: Theme.of(context).textTheme.titleMedium,
+          InkWell(
+            onTap: () => setState(() => _isDescriptionExpanded = !_isDescriptionExpanded),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(loc.overview, style: Theme.of(context).textTheme.titleMedium),
+                Icon(_isDescriptionExpanded ? Icons.expand_less : Icons.expand_more),
+              ],
+            ),
           ),
           const SizedBox(height: AppConstants.spacingSm),
           Text(
             video.displayContent,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  height: 1.6,
-                ),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.6),
+            maxLines: _isDescriptionExpanded ? null : 3,
+            overflow: _isDescriptionExpanded ? null : TextOverflow.ellipsis,
           ),
         ],
       ),

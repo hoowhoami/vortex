@@ -7,6 +7,7 @@ import '../../services/video_source_manager.dart';
 import '../../services/douban_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/utils/app_localizations.dart';
 import 'video_detail_screen.dart';
 
 class DoubanVideoDetailScreen extends StatefulWidget {
@@ -26,11 +27,27 @@ class _DoubanVideoDetailScreenState extends State<DoubanVideoDetailScreen> {
   List<String> _sourceNames = [];
   bool _isSearching = true;
   String? _errorMessage;
+  bool _isMetadataExpanded = false;
+  bool _isDescriptionExpanded = false;
+  DoubanItem? _detailItem;
+  bool _isLoadingDetail = true;
 
   @override
   void initState() {
     super.initState();
+    _loadDetail();
     _searchPlayableSources();
+  }
+
+  Future<void> _loadDetail() async {
+    final doubanService = context.read<DoubanService>();
+    final detail = await doubanService.getDetail(widget.doubanItem.id);
+    if (mounted) {
+      setState(() {
+        _detailItem = detail;
+        _isLoadingDetail = false;
+      });
+    }
   }
 
   Future<void> _searchPlayableSources() async {
@@ -80,92 +97,63 @@ class _DoubanVideoDetailScreenState extends State<DoubanVideoDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final doubanService = context.read<DoubanService>();
-    final posterUrl = doubanService.getProxiedImageUrl(widget.doubanItem.poster);
+    final item = _detailItem ?? widget.doubanItem;
+    final posterUrl = doubanService.getProxiedImageUrl(item.poster);
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          _buildAppBar(posterUrl),
-          SliverToBoxAdapter(
-            child: Padding(
+      appBar: AppBar(
+        title: Text(widget.doubanItem.title),
+      ),
+      body: _isLoadingDetail
+          ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
+          : ListView(
               padding: const EdgeInsets.all(AppConstants.spacingLg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(),
-                  const SizedBox(height: AppConstants.spacingLg),
-                  _buildMetadata(),
-                  const SizedBox(height: AppConstants.spacingLg),
-                  if (widget.doubanItem.description != null &&
-                      widget.doubanItem.description!.isNotEmpty)
-                    _buildDescription(),
-                  const SizedBox(height: AppConstants.spacingLg),
-                  _buildPlayableSourcesSection(),
-                ],
-              ),
+              children: [
+                if (posterUrl.isNotEmpty)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                    child: Image.network(
+                      posterUrl,
+                      height: 200,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 200,
+                          color: AppColors.darkSurface,
+                          child: const Icon(Icons.movie, size: 64, color: AppColors.textSecondary),
+                        );
+                      },
+                    ),
+                  ),
+                const SizedBox(height: AppConstants.spacingLg),
+                _buildHeader(),
+                const SizedBox(height: AppConstants.spacingLg),
+                _buildMetadataSection(),
+                const SizedBox(height: AppConstants.spacingLg),
+                _buildDescriptionSection(),
+                const SizedBox(height: AppConstants.spacingLg),
+                _buildPlayableSourcesSection(),
+              ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAppBar(String posterUrl) {
-    return SliverAppBar(
-      expandedHeight: 300,
-      pinned: true,
-      backgroundColor: AppColors.backgroundDark,
-      foregroundColor: Colors.white,
-      flexibleSpace: FlexibleSpaceBar(
-        background: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (posterUrl.isNotEmpty)
-              Image.network(
-                posterUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: AppColors.darkSurface,
-                    child: const Icon(Icons.movie, size: 64, color: AppColors.textSecondary),
-                  );
-                },
-              ),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    AppColors.backgroundDark.withOpacity(0.8),
-                    AppColors.backgroundDark,
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
   Widget _buildHeader() {
+    final item = _detailItem ?? widget.doubanItem;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          widget.doubanItem.title,
+          item.title,
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
         ),
-        if (widget.doubanItem.originalTitle != null &&
-            widget.doubanItem.originalTitle!.isNotEmpty)
+        if (item.originalTitle != null && item.originalTitle!.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: AppConstants.spacingXs),
             child: Text(
-              widget.doubanItem.originalTitle!,
+              item.originalTitle!,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -174,18 +162,18 @@ class _DoubanVideoDetailScreenState extends State<DoubanVideoDetailScreen> {
         const SizedBox(height: AppConstants.spacingMd),
         Row(
           children: [
-            if (widget.doubanItem.rateValue > 0) ...[
+            if (item.rateValue > 0) ...[
               const Icon(Icons.star, color: Colors.amber, size: 20),
               const SizedBox(width: 4),
               Text(
-                widget.doubanItem.rate,
+                item.rate,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
               ),
               const SizedBox(width: AppConstants.spacingMd),
             ],
-            if (widget.doubanItem.year.isNotEmpty)
+            if (item.year.isNotEmpty)
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
@@ -197,7 +185,7 @@ class _DoubanVideoDetailScreenState extends State<DoubanVideoDetailScreen> {
                       : AppColors.lightSurfaceVariant,
                   borderRadius: BorderRadius.circular(AppConstants.radiusSm),
                 ),
-                child: Text(widget.doubanItem.year),
+                child: Text(item.year),
               ),
           ],
         ),
@@ -205,23 +193,96 @@ class _DoubanVideoDetailScreenState extends State<DoubanVideoDetailScreen> {
     );
   }
 
-  Widget _buildMetadata() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (widget.doubanItem.genres != null && widget.doubanItem.genres!.isNotEmpty)
-          _buildMetadataRow('类型', widget.doubanItem.genres!),
-        if (widget.doubanItem.directors != null && widget.doubanItem.directors!.isNotEmpty)
-          _buildMetadataRow('导演', widget.doubanItem.directors!),
-        if (widget.doubanItem.actors != null && widget.doubanItem.actors!.isNotEmpty)
-          _buildMetadataRow('演员', widget.doubanItem.actors!),
-        if (widget.doubanItem.regions != null && widget.doubanItem.regions!.isNotEmpty)
-          _buildMetadataRow('地区', widget.doubanItem.regions!),
-      ],
+  Widget _buildMetadataSection() {
+    final item = _detailItem ?? widget.doubanItem;
+    final loc = AppLocalizations.of(context);
+    final hasMetadata = (item.genres?.isNotEmpty ?? false) ||
+        (item.directors?.isNotEmpty ?? false) ||
+        (item.actors?.isNotEmpty ?? false) ||
+        (item.regions?.isNotEmpty ?? false);
+
+    if (!hasMetadata) return const SizedBox.shrink();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+      ),
+      child: InkWell(
+        onTap: () => setState(() => _isMetadataExpanded = !_isMetadataExpanded),
+        child: Padding(
+          padding: const EdgeInsets.all(AppConstants.spacingMd),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(loc.movieInfo, style: Theme.of(context).textTheme.titleMedium),
+                  Icon(_isMetadataExpanded ? Icons.expand_less : Icons.expand_more),
+                ],
+              ),
+              const SizedBox(height: AppConstants.spacingSm),
+              Column(
+                children: [
+                  if (item.genres?.isNotEmpty ?? false)
+                    _buildMetadataRow('类型', item.genres!, maxLines: _isMetadataExpanded ? null : 1),
+                  if (item.directors?.isNotEmpty ?? false)
+                    _buildMetadataRow('导演', item.directors!, maxLines: _isMetadataExpanded ? null : 1),
+                  if (item.actors?.isNotEmpty ?? false)
+                    _buildMetadataRow('演员', item.actors!, maxLines: _isMetadataExpanded ? null : 1),
+                  if (item.regions?.isNotEmpty ?? false)
+                    _buildMetadataRow('地区', item.regions!, maxLines: _isMetadataExpanded ? null : 1),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
-  Widget _buildMetadataRow(String label, String value) {
+  Widget _buildDescriptionSection() {
+    final item = _detailItem ?? widget.doubanItem;
+    final loc = AppLocalizations.of(context);
+    final hasDescription = item.description != null && item.description!.isNotEmpty;
+
+    if (!hasDescription) return const SizedBox.shrink();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+      ),
+      child: InkWell(
+        onTap: () => setState(() => _isDescriptionExpanded = !_isDescriptionExpanded),
+        child: Padding(
+          padding: const EdgeInsets.all(AppConstants.spacingMd),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(loc.overview, style: Theme.of(context).textTheme.titleMedium),
+                  Icon(_isDescriptionExpanded ? Icons.expand_less : Icons.expand_more),
+                ],
+              ),
+              const SizedBox(height: AppConstants.spacingSm),
+              Text(
+                item.description!,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.6),
+                maxLines: _isDescriptionExpanded ? null : 3,
+                overflow: _isDescriptionExpanded ? null : TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetadataRow(String label, String value, {int? maxLines}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppConstants.spacingSm),
       child: Row(
@@ -240,32 +301,12 @@ class _DoubanVideoDetailScreenState extends State<DoubanVideoDetailScreen> {
             child: Text(
               value,
               style: Theme.of(context).textTheme.bodyMedium,
+              maxLines: maxLines,
+              overflow: maxLines != null ? TextOverflow.ellipsis : null,
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildDescription() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '简介',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: AppConstants.spacingSm),
-        Text(
-          widget.doubanItem.description!,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
-                height: 1.6,
-              ),
-        ),
-      ],
     );
   }
 
@@ -366,68 +407,61 @@ class _DoubanVideoDetailScreenState extends State<DoubanVideoDetailScreen> {
             ),
           )
         else
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _sourceNames.length,
-            itemBuilder: (context, index) {
-              final sourceName = _sourceNames[index];
-              final video = _sourceVideos[sourceName]!;
-              return Card(
-                margin: const EdgeInsets.only(bottom: AppConstants.spacingMd),
-                child: ListTile(
-                  leading: ClipRRect(
-                    borderRadius: BorderRadius.circular(AppConstants.radiusSm),
-                    child: Container(
-                      width: 60,
-                      height: 80,
-                      color: AppColors.accent.withOpacity(0.2),
-                      child: video.pic.isNotEmpty
-                          ? Image.network(
-                              video.pic,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Icon(
-                                  Icons.video_library,
-                                  color: AppColors.accent,
-                                  size: 32,
-                                );
-                              },
-                            )
-                          : const Icon(
-                              Icons.video_library,
+          SizedBox(
+            height: 120,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _sourceNames.length,
+              itemBuilder: (context, index) {
+                final sourceName = _sourceNames[index];
+                final video = _sourceVideos[sourceName]!;
+                return Container(
+                  width: 140,
+                  margin: EdgeInsets.only(right: index < _sourceNames.length - 1 ? AppConstants.spacingMd : 0),
+                  child: Card(
+                    child: InkWell(
+                      onTap: () => _launchVideo(video),
+                      borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppConstants.spacingMd),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.play_circle_outline,
                               color: AppColors.accent,
                               size: 32,
                             ),
-                    ),
-                  ),
-                  title: Text(
-                    sourceName,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 4),
-                      Text('影片: ${video.name}'),
-                      if (video.remarks != null && video.remarks!.isNotEmpty)
-                        Text(
-                          video.remarks!,
-                          style: const TextStyle(
-                            color: AppColors.accent,
-                            fontSize: 12,
-                          ),
+                            const SizedBox(height: AppConstants.spacingSm),
+                            Text(
+                              sourceName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                            ),
+                            if (video.remarks != null && video.remarks!.isNotEmpty)
+                              Text(
+                                video.remarks!,
+                                style: const TextStyle(
+                                  color: AppColors.accent,
+                                  fontSize: 12,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                              ),
+                          ],
                         ),
-                    ],
+                      ),
+                    ),
                   ),
-                  trailing: const Icon(Icons.play_circle_outline, color: AppColors.accent, size: 32),
-                  onTap: () => _launchVideo(video),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
       ],
     );

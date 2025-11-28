@@ -299,6 +299,25 @@ class DoubanService {
     );
   }
 
+  /// Get detailed information for a specific Douban item by ID
+  Future<DoubanItem?> getDetail(String id) async {
+    try {
+      final baseUrl = 'https://m.douban.com/rexxar/api/v2/subject/$id';
+      final url = _proxyConfig.getBaseUrl(baseUrl);
+      final uri = Uri.parse(url);
+
+      final response = await _client.get(uri, headers: _headers).timeout(_timeout);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return DoubanItem.fromJson(data);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   /// Find best match for a video title
   /// This is useful for enriching video data with Douban metadata
   Future<DoubanItem?> findBestMatch(
