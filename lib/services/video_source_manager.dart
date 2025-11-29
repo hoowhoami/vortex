@@ -85,7 +85,6 @@ class VideoSourceManager {
   bool _isValidPlayUrl(String url) {
     if (url.isEmpty) return false;
 
-    // Check if URL contains valid video formats
     final validFormats = ['.m3u8', '.mp4', '.flv', '.avi', '.mkv', '.ts'];
     return validFormats.any((format) => url.toLowerCase().contains(format));
   }

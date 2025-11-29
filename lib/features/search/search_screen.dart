@@ -7,7 +7,7 @@ import '../../core/utils/app_localizations.dart';
 import '../../models/douban.dart';
 import '../../services/douban_service.dart';
 import '../../widgets/douban_image.dart';
-import '../video_detail/douban_video_detail_screen.dart';
+import '../video_detail/video_detail_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -258,7 +258,7 @@ class _SearchScreenState extends State<SearchScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => DoubanVideoDetailScreen(doubanItem: item),
+            builder: (context) => VideoDetailScreen(doubanItem: item),
           ),
         );
       },

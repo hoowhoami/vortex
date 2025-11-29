@@ -7,7 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/utils/app_localizations.dart';
 import '../../widgets/douban_image.dart';
-import '../video_detail/douban_video_detail_screen.dart';
+import '../video_detail/video_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -264,7 +264,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => DoubanVideoDetailScreen(doubanItem: item),
+            builder: (context) => VideoDetailScreen(doubanItem: item),
           ),
         );
       },
@@ -543,7 +543,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => DoubanVideoDetailScreen(doubanItem: item),
+            builder: (context) => VideoDetailScreen(doubanItem: item),
           ),
         );
       },
