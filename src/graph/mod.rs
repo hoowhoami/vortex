@@ -28,4 +28,20 @@ impl Graph {
 
         Ok(data)
     }
+
+    pub async fn execute_batch(&self, urls: Vec<String>) -> Vec<Result<ScrapedData>> {
+        let mut results = Vec::new();
+        for url in urls {
+            results.push(self.execute(url).await);
+        }
+        results
+    }
+
+    pub async fn execute_parallel(&self, urls: Vec<String>) -> Vec<Result<ScrapedData>> {
+        let futures: Vec<_> = urls.into_iter()
+            .map(|url| self.execute(url))
+            .collect();
+
+        futures::future::join_all(futures).await
+    }
 }

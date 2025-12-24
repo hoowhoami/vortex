@@ -13,6 +13,11 @@ impl ParseNode {
     pub fn new(selectors: Vec<(String, String)>) -> Self {
         Self { selectors }
     }
+
+    pub fn with_selector(mut self, key: String, selector: String) -> Self {
+        self.selectors.push((key, selector));
+        self
+    }
 }
 
 #[async_trait]
