@@ -7,6 +7,14 @@ pub struct Graph {
     nodes: Vec<Arc<dyn Node>>,
 }
 
+impl std::fmt::Debug for Graph {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Graph")
+            .field("nodes", &format!("{} nodes", self.nodes.len()))
+            .finish()
+    }
+}
+
 impl Graph {
     pub fn new() -> Self {
         Self { nodes: Vec::new() }
