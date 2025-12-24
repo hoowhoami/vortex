@@ -5,6 +5,7 @@ pub mod graph;
 pub mod task;
 pub mod store;
 pub mod executor;
+pub mod llm_client;
 
 pub use error::{LuminaError, Result};
 pub use types::ScrapedData;
@@ -21,4 +22,5 @@ pub use nodes::{
     json::JsonNode,
     regex::RegexNode,
     attribute::AttributeNode,
+    llm_parse::LLMParseNode,
 };

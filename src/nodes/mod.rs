@@ -5,6 +5,7 @@ pub mod delay;
 pub mod json;
 pub mod regex;
 pub mod attribute;
+pub mod llm_parse;
 
 use async_trait::async_trait;
 use crate::error::Result;
