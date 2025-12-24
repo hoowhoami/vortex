@@ -1,6 +1,10 @@
 pub mod fetch;
 pub mod parse;
 pub mod llm;
+pub mod delay;
+pub mod json;
+pub mod regex;
+pub mod attribute;
 
 use async_trait::async_trait;
 use crate::error::Result;
