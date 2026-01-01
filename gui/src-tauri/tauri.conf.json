@@ -1,0 +1,23 @@
+{
+  "productName": "Vortex",
+  "version": "0.1.0",
+  "identifier": "com.vortex.downloader",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Vortex Downloader",
+        "width": 1200,
+        "height": 800
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  }
+}
