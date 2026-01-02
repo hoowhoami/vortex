@@ -1,6 +1,14 @@
+# Dependencies
+node_modules/
+package-lock.json
 
-# Added by cargo
-**/target
+# Production
+dist/
+build/
+
+# Rust / Tauri
+src-tauri/target/
+src-tauri/Cargo.lock
 
 # Database files
 *.db
@@ -10,12 +18,18 @@
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 
 # OS
 .DS_Store
 Thumbs.db
 
-# GUI
-gui/node_modules/
-gui/dist/
-gui/build/
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
