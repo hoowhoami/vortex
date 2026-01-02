@@ -1,5 +1,21 @@
 
-
 # Added by cargo
+**/target
 
-/target
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# GUI
+gui/node_modules/
+gui/dist/
+gui/build/

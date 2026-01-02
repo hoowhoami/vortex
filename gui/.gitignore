@@ -1,7 +1,0 @@
-node_modules
-dist
-dist-electron
-.DS_Store
-*.db
-*.db-shm
-*.db-wal
