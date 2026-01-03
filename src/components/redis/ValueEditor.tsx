@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { formatJSON, isValidJSON } from "@/lib/json-utils";
 import {
   Table,
   TableBody,
@@ -23,8 +24,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Save, Plus, Trash2, RefreshCw, Database } from "lucide-react";
+import { Save, Plus, Trash2, RefreshCw, Database, Code } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { UI_SIZES } from "@/lib/ui-constants";
 
 export function ValueEditor() {
   const { t } = useTranslation();
@@ -102,18 +104,44 @@ export function ValueEditor() {
     );
   }
 
-  const renderStringEditor = () => (
-    <div className="space-y-4">
-      <Textarea
-        value={editedValue as string}
-        onChange={(e) => {
-          setEditedValue(e.target.value);
-          setIsEditing(true);
-        }}
-        className="font-mono min-h-[200px]"
-      />
-    </div>
-  );
+  const renderStringEditor = () => {
+    const isJson = typeof editedValue === "string" && isValidJSON(editedValue);
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          {isJson && (
+            <Badge variant="secondary" className="text-xs">
+              <Code size={12} className="mr-1" />
+              JSON
+            </Badge>
+          )}
+          {isJson && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditedValue(formatJSON(editedValue as string));
+                setIsEditing(true);
+              }}
+              className={UI_SIZES.button.className}
+            >
+              <Code size={UI_SIZES.icon.small} className="mr-1" />
+              {t("common.format") || "Format"}
+            </Button>
+          )}
+        </div>
+        <Textarea
+          value={editedValue as string}
+          onChange={(e) => {
+            setEditedValue(e.target.value);
+            setIsEditing(true);
+          }}
+          className={`font-mono h-[calc(100vh-280px)] resize-none ${isJson ? "text-xs" : ""}`}
+          spellCheck={false}
+        />
+      </div>
+    );
+  };
 
   const renderListEditor = () => {
     const list = editedValue as string[];
@@ -122,13 +150,13 @@ export function ValueEditor() {
         <div className="flex items-center justify-between">
           <Label>{t("redis.listValues")} ({list.length})</Label>
           <Button
-            size="sm"
             onClick={() => {
               setEditedValue([...list, ""]);
               setIsEditing(true);
             }}
+            className={UI_SIZES.button.className}
           >
-            <Plus size={14} className="mr-1" />
+            <Plus size={UI_SIZES.icon.small} className="mr-1" />
             {t("common.add")}
           </Button>
         </div>
@@ -155,7 +183,7 @@ export function ValueEditor() {
                     setIsEditing(true);
                   }}
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={UI_SIZES.icon.small} />
                 </Button>
               </div>
             ))}
@@ -172,13 +200,13 @@ export function ValueEditor() {
         <div className="flex items-center justify-between">
           <Label>{t("redis.setMembers")} ({set.length})</Label>
           <Button
-            size="sm"
             onClick={() => {
               setEditedValue([...set, ""]);
               setIsEditing(true);
             }}
+            className={UI_SIZES.button.className}
           >
-            <Plus size={14} className="mr-1" />
+            <Plus size={UI_SIZES.icon.small} className="mr-1" />
             {t("common.add")}
           </Button>
         </div>
@@ -205,7 +233,7 @@ export function ValueEditor() {
                     setIsEditing(true);
                   }}
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={UI_SIZES.icon.small} />
                 </Button>
               </div>
             ))}
@@ -224,13 +252,13 @@ export function ValueEditor() {
         <div className="flex items-center justify-between">
           <Label>{t("redis.hashFields")} ({entries.length})</Label>
           <Button
-            size="sm"
             onClick={() => {
               setEditedValue({ ...hash, "": "" });
               setIsEditing(true);
             }}
+            className={UI_SIZES.button.className}
           >
-            <Plus size={14} className="mr-1" />
+            <Plus size={UI_SIZES.icon.small} className="mr-1" />
             {t("common.add")}
           </Button>
         </div>
@@ -279,7 +307,7 @@ export function ValueEditor() {
                         setIsEditing(true);
                       }}
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={UI_SIZES.icon.small} />
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -298,13 +326,13 @@ export function ValueEditor() {
         <div className="flex items-center justify-between">
           <Label>{t("redis.zsetMembers")} ({zset.length})</Label>
           <Button
-            size="sm"
             onClick={() => {
               setEditedValue([...zset, ["", 0]]);
               setIsEditing(true);
             }}
+            className={UI_SIZES.button.className}
           >
-            <Plus size={14} className="mr-1" />
+            <Plus size={UI_SIZES.icon.small} className="mr-1" />
             {t("common.add")}
           </Button>
         </div>
@@ -354,7 +382,7 @@ export function ValueEditor() {
                         setIsEditing(true);
                       }}
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={UI_SIZES.icon.small} />
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -413,11 +441,11 @@ export function ValueEditor() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className={UI_SIZES.button.iconClassName}
               onClick={handleRefresh}
               disabled={refreshing}
             >
-              <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
+              <RefreshCw size={UI_SIZES.icon.medium} className={refreshing ? "animate-spin" : ""} />
             </Button>
           </div>
         </div>
@@ -437,11 +465,12 @@ export function ValueEditor() {
               setEditedValue(selectedValue.value);
               setIsEditing(false);
             }}
+            className={UI_SIZES.button.className}
           >
             {t("common.cancel")}
           </Button>
-          <Button onClick={handleSave}>
-            <Save size={14} className="mr-2" />
+          <Button onClick={handleSave} className={UI_SIZES.button.className}>
+            <Save size={UI_SIZES.icon.small} className="mr-2" />
             {t("common.save")}
           </Button>
         </div>

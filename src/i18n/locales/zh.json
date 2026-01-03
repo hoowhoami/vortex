@@ -18,7 +18,11 @@
     "settings": "设置",
     "success": "成功",
     "error": "错误",
-    "add": "添加"
+    "add": "添加",
+    "format": "格式化",
+    "done": "完成",
+    "bulkSelect": "批量选择",
+    "selected": "已选择"
   },
   "sidebar": {
     "connections": "连接",
@@ -75,7 +79,14 @@
   "settings": {
     "title": "设置",
     "description": "管理应用偏好设置",
+    "redis": "Redis 设置",
+    "redisDesc": "配置 Redis 客户端行为",
+    "scanCount": "SCAN 计数",
+    "scanCountDesc": "每次 SCAN 命令返回的键数量",
+    "keysLimit": "键数量限制",
+    "keysLimitDesc": "最多显示的键数量",
     "appearance": "外观",
+    "appearanceDesc": "自定义应用外观",
     "theme": "主题",
     "themeLight": "浅色",
     "themeDark": "深色",
@@ -84,15 +95,19 @@
     "languageDesc": "选择界面语言",
     "general": "通用",
     "about": "关于",
+    "aboutDesc": "应用信息",
     "version": "版本"
   },
   "redis": {
     "searchPattern": "搜索模式",
+    "allTypes": "全部类型",
     "totalKeys": "键总数",
     "noKeys": "未找到键",
     "selectKey": "选择一个键以查看和编辑其值",
     "deleteKey": "删除键",
     "deleteKeyConfirm": "确定要删除此键吗",
+    "bulkDelete": "批量删除",
+    "bulkDeleteConfirm": "确定要删除选中的键吗？此操作不可撤销。",
     "key": "键",
     "value": "值",
     "type": "类型",
@@ -110,5 +125,30 @@
     "editTtlDesc": "设置此键的过期时间（秒）。使用 -1 表示永不过期。",
     "ttlSeconds": "过期时间（秒）",
     "valueRefreshed": "值已刷新"
+  },
+  "command": {
+    "typeCommand": "输入命令或搜索...",
+    "noResults": "未找到结果",
+    "navigate": "导航",
+    "select": "选择",
+    "close": "关闭",
+    "refreshConnections": "刷新连接",
+    "refreshConnectionsDesc": "从数据库重新加载所有连接",
+    "refreshKeys": "刷新键列表",
+    "refreshKeysDesc": "重新加载当前连接的键"
+  },
+  "category": {
+    "connections": "连接",
+    "redis": "Redis",
+    "keys": "键",
+    "general": "通用"
+  },
+  "console": {
+    "title": "Redis 控制台",
+    "clear": "清空",
+    "empty": "输入 Redis 命令开始使用",
+    "placeholder": "输入 Redis 命令...",
+    "execute": "执行",
+    "hint": "按 Enter 执行，↑↓ 浏览历史"
   }
 }

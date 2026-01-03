@@ -48,9 +48,9 @@ pub async fn select_database(state: State<'_, AppState>, connection_id: String, 
 }
 
 #[tauri::command]
-pub async fn get_keys(state: State<'_, AppState>, connection_id: String, pattern: String) -> Result<Vec<RedisKey>, String> {
+pub async fn get_keys(state: State<'_, AppState>, connection_id: String, pattern: String, scan_count: Option<u32>, keys_limit: Option<u32>, key_type: Option<String>) -> Result<Vec<RedisKey>, String> {
     let redis_manager = state.redis_manager.lock().unwrap();
-    redis_manager.get_keys_with_type(&connection_id, &pattern)
+    redis_manager.get_keys_with_type(&connection_id, &pattern, scan_count, keys_limit.map(|v| v as usize), key_type.as_deref())
 }
 
 #[tauri::command]
@@ -82,6 +82,15 @@ pub async fn set_value(
 pub async fn delete_key(state: State<'_, AppState>, connection_id: String, key: String) -> Result<(), String> {
     let redis_manager = state.redis_manager.lock().unwrap();
     redis_manager.delete_key(&connection_id, &key)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_multiple_keys(state: State<'_, AppState>, connection_id: String, keys: Vec<String>) -> Result<(), String> {
+    let redis_manager = state.redis_manager.lock().unwrap();
+    for key in keys {
+        redis_manager.delete_key(&connection_id, &key)?;
+    }
     Ok(())
 }
 

@@ -1,41 +1,31 @@
 import { useEffect, useState } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useConnectionStore } from "@/stores/connectionStore";
 import { useRedisStore } from "@/stores/redisStore";
 import { ConnectionFormDialog } from "@/components/connection/ConnectionFormDialog";
 import { ConnectionSidebar } from "@/components/connection/ConnectionSidebar";
 import { GroupFormDialog } from "@/components/connection/GroupFormDialog";
-import { KeyBrowser } from "@/components/redis/KeyBrowser";
-import { ValueEditor } from "@/components/redis/ValueEditor";
 import { SettingsDialog } from "@/components/SettingsDialog";
 import { NavBar } from "@/components/NavBar";
 import { StatusBar } from "@/components/StatusBar";
 import { Toaster } from "@/components/ui/toaster";
 import { Connection, ConnectionGroup } from "@/types";
-import {
-  ResizablePanelGroup,
-  ResizablePanel,
-  ResizableHandle,
-} from "@/components/ui/resizable";
+import { KeyBrowser } from "@/components/redis/KeyBrowser";
+import { ValueEditor } from "@/components/redis/ValueEditor";
+import { RedisConsole } from "@/components/redis/RedisConsole";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 
 function App() {
-  const { connections, fetchConnections, fetchGroups, deleteConnection, groups } =
-    useConnectionStore();
+  const { connections, fetchConnections, fetchGroups, deleteConnection, groups } = useConnectionStore();
   const { connectedId, selectDatabase, currentDatabase } = useRedisStore();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [preselectedGroupId, setPreselectedGroupId] = useState<string | undefined>(undefined);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [editingConnection, setEditingConnection] = useState<
-    Connection | undefined
-  >(undefined);
-  const [editingGroup, setEditingGroup] = useState<
-    ConnectionGroup | undefined
-  >(undefined);
-  const [selectedConnection, setSelectedConnection] = useState<Connection | null>(
-    null
-  );
+  const [editingConnection, setEditingConnection] = useState<Connection | undefined>(undefined);
+  const [editingGroup, setEditingGroup] = useState<ConnectionGroup | undefined>(undefined);
+  const [selectedConnection, setSelectedConnection] = useState<Connection | null>(null);
 
-  // Get currently connected connection
   const connectedConnection = connections.find((c) => c.id === connectedId) || null;
 
   useEffect(() => {
@@ -43,7 +33,6 @@ function App() {
     fetchGroups();
   }, [fetchConnections, fetchGroups]);
 
-  // Auto-select connected connection or first connection
   useEffect(() => {
     if (connections.length > 0 && !selectedConnection) {
       const connectedConn = connections.find((c) => c.id === connectedId);
@@ -63,29 +52,8 @@ function App() {
     }
   };
 
-  const handleDialogClose = (open: boolean) => {
-    setDialogOpen(open);
-    if (!open) {
-      setEditingConnection(undefined);
-      setPreselectedGroupId(undefined);
-    }
-  };
-
-  const handleGroupDialogClose = (open: boolean) => {
-    setGroupDialogOpen(open);
-    if (!open) {
-      setEditingGroup(undefined);
-    }
-  };
-
-  const handleEditGroup = (group: ConnectionGroup) => {
-    setEditingGroup(group);
-    setGroupDialogOpen(true);
-  };
-
   return (
     <div className="flex flex-col h-screen bg-background">
-      {/* Navigation Bar */}
       <NavBar
         currentConnection={connectedConnection}
         currentDatabase={currentDatabase}
@@ -100,11 +68,9 @@ function App() {
         }}
       />
 
-      {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
-        <ResizablePanelGroup orientation="horizontal" className="h-full">
-          {/* Left - Connection Sidebar */}
-          <ResizablePanel defaultSize={20} minSize={10}>
+        <div className="flex w-full h-full">
+          <div className="w-64 border-r shrink-0">
             <ConnectionSidebar
               onAddConnection={(groupId) => {
                 setPreselectedGroupId(groupId);
@@ -115,51 +81,63 @@ function App() {
               onSelectConnection={setSelectedConnection}
               selectedConnection={selectedConnection}
               onAddGroup={() => setGroupDialogOpen(true)}
-              onEditGroup={handleEditGroup}
+              onEditGroup={(group) => {
+                setEditingGroup(group);
+                setGroupDialogOpen(true);
+              }}
             />
-          </ResizablePanel>
+          </div>
 
-          <ResizableHandle withHandle />
-
-          {/* Middle - Key Browser */}
-          <ResizablePanel defaultSize={25} minSize={10}>
-            <KeyBrowser />
-          </ResizablePanel>
-
-          <ResizableHandle withHandle />
-
-          {/* Right - Value Editor */}
-          <ResizablePanel defaultSize={55} minSize={30}>
-            <ValueEditor />
-          </ResizablePanel>
-        </ResizablePanelGroup>
+          <div className="flex-1 overflow-hidden">
+            <Routes>
+              <Route path="/" element={<Navigate to="/browser" replace />} />
+              <Route
+                path="/browser"
+                element={
+                  <ResizablePanelGroup orientation="horizontal" className="w-full h-full">
+                    <ResizablePanel defaultSize={33} minSize={20}>
+                      <KeyBrowser />
+                    </ResizablePanel>
+                    <ResizableHandle withHandle />
+                    <ResizablePanel defaultSize={67} minSize={20}>
+                      <ValueEditor />
+                    </ResizablePanel>
+                  </ResizablePanelGroup>
+                }
+              />
+              <Route path="/console" element={<RedisConsole />} />
+            </Routes>
+          </div>
+        </div>
       </div>
 
-      {/* Status Bar */}
       <StatusBar
         currentConnection={connectedConnection}
         currentDatabase={currentDatabase}
         isConnected={!!connectedId}
       />
 
-      {/* Dialogs */}
       <ConnectionFormDialog
         open={dialogOpen}
-        onOpenChange={handleDialogClose}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) {
+            setEditingConnection(undefined);
+            setPreselectedGroupId(undefined);
+          }
+        }}
         connection={editingConnection}
         preselectedGroupId={preselectedGroupId}
       />
       <GroupFormDialog
         open={groupDialogOpen}
-        onOpenChange={handleGroupDialogClose}
+        onOpenChange={(open) => {
+          setGroupDialogOpen(open);
+          if (!open) setEditingGroup(undefined);
+        }}
         group={editingGroup}
       />
-      <SettingsDialog
-        open={settingsOpen}
-        onOpenChange={setSettingsOpen}
-      />
-
-      {/* Toast Notifications */}
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
       <Toaster />
     </div>
   );

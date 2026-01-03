@@ -15,10 +15,11 @@ interface RedisState {
   connect: (connectionId: string) => Promise<void>;
   disconnect: () => Promise<void>;
   selectDatabase: (database: number) => Promise<void>;
-  fetchKeys: (pattern: string) => Promise<void>;
+  fetchKeys: (pattern: string, keyType?: string) => Promise<void>;
   getValue: (key: string) => Promise<void>;
   setValue: (key: string, value: unknown) => Promise<void>;
   deleteKey: (key: string) => Promise<void>;
+  deleteMultipleKeys: (keys: string[]) => Promise<void>;
   executeCommand: (command: string) => Promise<string>;
 }
 
@@ -77,15 +78,22 @@ export const useRedisStore = create<RedisState>((set, get) => ({
     }
   },
 
-  fetchKeys: async (pattern = '*') => {
+  fetchKeys: async (pattern = '*', keyType?: string) => {
     const { connectedId } = get();
     if (!connectedId) return;
+
+    // Get settings from localStorage
+    const scanCount = parseInt(localStorage.getItem('scanCount') || '1000');
+    const keysLimit = parseInt(localStorage.getItem('keysLimit') || '10000');
 
     set({ loading: true, error: null });
     try {
       const keys = await invoke<RedisKey[]>('get_keys', {
         connectionId: connectedId,
         pattern,
+        scanCount,
+        keysLimit,
+        keyType: keyType && keyType !== 'all' ? keyType : null,
       });
       set({ keys, loading: false });
     } catch (error) {
@@ -141,6 +149,28 @@ export const useRedisStore = create<RedisState>((set, get) => ({
         keys: state.keys.filter((k) => k.key !== key),
         selectedKey: state.selectedKey === key ? null : state.selectedKey,
         selectedValue: state.selectedKey === key ? null : state.selectedValue,
+        loading: false,
+      }));
+    } catch (error) {
+      set({ error: String(error), loading: false });
+      throw error;
+    }
+  },
+
+  deleteMultipleKeys: async (keys) => {
+    const { connectedId } = get();
+    if (!connectedId) return;
+
+    set({ loading: true, error: null });
+    try {
+      await invoke('delete_multiple_keys', {
+        connectionId: connectedId,
+        keys,
+      });
+      set((state) => ({
+        keys: state.keys.filter((k) => !keys.includes(k.key)),
+        selectedKey: keys.includes(state.selectedKey || '') ? null : state.selectedKey,
+        selectedValue: keys.includes(state.selectedKey || '') ? null : state.selectedValue,
         loading: false,
       }));
     } catch (error) {

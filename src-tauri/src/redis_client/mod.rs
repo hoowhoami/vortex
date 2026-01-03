@@ -97,9 +97,16 @@ impl RedisConnectionManager {
         Ok(keys)
     }
 
-    pub fn get_keys_with_type(&self, id: &str, pattern: &str) -> Result<Vec<RedisKey>, String> {
+    pub fn get_keys_with_type(&self, id: &str, pattern: &str, scan_count: Option<u32>, keys_limit: Option<usize>, key_type: Option<&str>) -> Result<Vec<RedisKey>, String> {
         let mut connections = self.connections.lock().unwrap();
         let conn = connections.get_mut(id).ok_or("Connection not found")?;
+
+        let scan_count = scan_count.unwrap_or(1000);
+        let keys_limit = keys_limit.unwrap_or(10000);
+
+        // Check Redis version to determine TYPE support
+        let redis_version = self.get_redis_version(conn)?;
+        let supports_type = redis_version >= (6, 0, 0);
 
         // Use SCAN instead of KEYS for better performance with large datasets
         let mut keys = Vec::new();
@@ -107,12 +114,19 @@ impl RedisConnectionManager {
         let match_pattern = if pattern == "*" { None } else { Some(pattern) };
 
         loop {
-            let (next_cursor, batch_keys): (u64, Vec<String>) = redis::cmd("SCAN")
-                .arg(cursor)
+            let mut cmd = redis::cmd("SCAN");
+            cmd.arg(cursor)
                 .arg("MATCH")
                 .arg(match_pattern.unwrap_or("*"))
                 .arg("COUNT")
-                .arg(1000)
+                .arg(scan_count);
+
+            // Add TYPE parameter if Redis 6.0+ and type filter is specified
+            if supports_type && key_type.is_some() {
+                cmd.arg("TYPE").arg(key_type.unwrap());
+            }
+
+            let (next_cursor, batch_keys): (u64, Vec<String>) = cmd
                 .query(conn)
                 .map_err(|e| e.to_string())?;
 
@@ -123,8 +137,8 @@ impl RedisConnectionManager {
                 break;
             }
 
-            // Safety limit
-            if keys.len() > 100_000 {
+            // Safety limit using configured keys_limit
+            if keys.len() >= keys_limit {
                 break;
             }
         }
@@ -155,6 +169,30 @@ impl RedisConnectionManager {
             .collect();
 
         Ok(result)
+    }
+
+    fn get_redis_version(&self, conn: &mut Connection) -> Result<(u32, u32, u32), String> {
+        let info: String = redis::cmd("INFO")
+            .arg("server")
+            .query(conn)
+            .map_err(|e| e.to_string())?;
+
+        // Parse version from INFO output
+        for line in info.lines() {
+            if line.starts_with("redis_version:") {
+                let version_str = line.trim_start_matches("redis_version:");
+                let parts: Vec<&str> = version_str.split('.').collect();
+                if parts.len() >= 3 {
+                    let major = parts[0].parse::<u32>().unwrap_or(0);
+                    let minor = parts[1].parse::<u32>().unwrap_or(0);
+                    let patch = parts[2].parse::<u32>().unwrap_or(0);
+                    return Ok((major, minor, patch));
+                }
+            }
+        }
+
+        // Default to version 5.0.0 if parsing fails
+        Ok((5, 0, 0))
     }
 
     pub fn get_value(&self, id: &str, key: &str) -> Result<RedisValue, String> {

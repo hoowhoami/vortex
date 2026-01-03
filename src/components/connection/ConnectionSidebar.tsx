@@ -25,6 +25,7 @@ import {
   Trash2,
   Power,
 } from "lucide-react";
+import { UI_SIZES } from "@/lib/ui-constants";
 
 interface ConnectionSidebarProps {
   onAddConnection: (groupId?: string) => void;
@@ -106,7 +107,7 @@ export function ConnectionSidebar({
 
         {isConnected && (
           <Badge variant="outline" className="text-xs px-1 py-0">
-            Active
+            {t("common.active")}
           </Badge>
         )}
 
@@ -129,7 +130,7 @@ export function ConnectionSidebar({
               disabled={isConnecting}
             >
               <Power size={14} className="mr-2" />
-              {isConnecting ? "Connecting..." : isConnected ? "Disconnect" : "Connect"}
+              {isConnecting ? t("common.connecting") : isConnected ? t("common.disconnect") : t("common.connect")}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -139,7 +140,7 @@ export function ConnectionSidebar({
               }}
             >
               <Edit size={14} className="mr-2" />
-              Edit
+              {t("common.edit")}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={(e) => {
@@ -149,7 +150,7 @@ export function ConnectionSidebar({
               className="text-destructive"
             >
               <Trash2 size={14} className="mr-2" />
-              Delete
+              {t("common.delete")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -165,17 +166,17 @@ export function ConnectionSidebar({
           <h2 className="font-semibold">{t("sidebar.connections")}</h2>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="icon" variant="ghost" className="h-8 w-8">
-                <Plus size={16} />
+              <Button size="icon" variant="ghost" className={UI_SIZES.button.iconClassName}>
+                <Plus size={UI_SIZES.icon.medium} />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => onAddConnection()}>
-                <Database size={14} className="mr-2" />
+                <Database size={UI_SIZES.icon.small} className="mr-2" />
                 {t("sidebar.addConnection")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onAddGroup}>
-                <Folder size={14} className="mr-2" />
+                <Folder size={UI_SIZES.icon.small} className="mr-2" />
                 {t("sidebar.addGroup")}
               </DropdownMenuItem>
             </DropdownMenuContent>

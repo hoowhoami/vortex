@@ -18,7 +18,11 @@
     "settings": "Settings",
     "success": "Success",
     "error": "Error",
-    "add": "Add"
+    "add": "Add",
+    "format": "Format",
+    "done": "Done",
+    "bulkSelect": "Bulk Select",
+    "selected": "selected"
   },
   "sidebar": {
     "connections": "Connections",
@@ -75,7 +79,14 @@
   "settings": {
     "title": "Settings",
     "description": "Manage your application preferences",
+    "redis": "Redis Settings",
+    "redisDesc": "Configure Redis client behavior",
+    "scanCount": "SCAN Count",
+    "scanCountDesc": "Number of keys returned per SCAN command",
+    "keysLimit": "Keys Limit",
+    "keysLimitDesc": "Maximum number of keys to display",
     "appearance": "Appearance",
+    "appearanceDesc": "Customize the look and feel of the application",
     "theme": "Theme",
     "themeLight": "Light",
     "themeDark": "Dark",
@@ -84,15 +95,19 @@
     "languageDesc": "Select your preferred language",
     "general": "General",
     "about": "About",
+    "aboutDesc": "Application information",
     "version": "Version"
   },
   "redis": {
     "searchPattern": "Search Pattern",
+    "allTypes": "All Types",
     "totalKeys": "Total Keys",
     "noKeys": "No keys found",
     "selectKey": "Select a key to view and edit its value",
     "deleteKey": "Delete Key",
     "deleteKeyConfirm": "Are you sure you want to delete this key",
+    "bulkDelete": "Bulk Delete",
+    "bulkDeleteConfirm": "Are you sure you want to delete the selected keys? This action cannot be undone.",
     "key": "Key",
     "value": "Value",
     "type": "Type",
@@ -110,5 +125,30 @@
     "editTtlDesc": "Set the time-to-live for this key in seconds. Use -1 for no expiration.",
     "ttlSeconds": "TTL (seconds)",
     "valueRefreshed": "Value refreshed"
+  },
+  "command": {
+    "typeCommand": "Type a command or search...",
+    "noResults": "No results found",
+    "navigate": "to navigate",
+    "select": "to select",
+    "close": "to close",
+    "refreshConnections": "Refresh Connections",
+    "refreshConnectionsDesc": "Reload all connections from the database",
+    "refreshKeys": "Refresh Keys",
+    "refreshKeysDesc": "Reload keys for current connection"
+  },
+  "category": {
+    "connections": "Connections",
+    "redis": "Redis",
+    "keys": "Keys",
+    "general": "General"
+  },
+  "console": {
+    "title": "Redis Console",
+    "clear": "Clear",
+    "empty": "Type a Redis command to get started",
+    "placeholder": "Enter Redis command...",
+    "execute": "Execute",
+    "hint": "Press Enter to execute, ↑↓ to navigate history"
   }
 }

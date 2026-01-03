@@ -35,6 +35,7 @@ pub fn run() {
             get_value,
             set_value,
             delete_key,
+            delete_multiple_keys,
             execute_command
         ])
         .run(tauri::generate_context!())
