@@ -4,14 +4,13 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils/utils";
-import { Home, Search, Tv, Radio, Settings } from "lucide-react";
+import { Home, Search, Tv, Radio } from "lucide-react";
 
 const navItems = [
   { icon: Home, label: "首页", href: "/home" },
   { icon: Search, label: "搜索", href: "/search" },
   { icon: Tv, label: "豆瓣", href: "/douban" },
   { icon: Radio, label: "直播", href: "/live" },
-  { icon: Settings, label: "设置", href: "/settings" },
 ];
 
 export function MobileNav() {

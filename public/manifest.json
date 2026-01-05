@@ -9,44 +9,25 @@
   "orientation": "any",
   "icons": [
     {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable any"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "maskable any"
     }
   ],
   "categories": ["entertainment", "video"],
-  "screenshots": [],
   "shortcuts": [
     {
       "name": "搜索",
       "short_name": "搜索",
       "description": "搜索视频内容",
-      "url": "/search",
-      "icons": [
-        {
-          "src": "/icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
+      "url": "/search"
     },
     {
       "name": "直播",
       "short_name": "直播",
       "description": "观看直播频道",
-      "url": "/live",
-      "icons": [
-        {
-          "src": "/icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
+      "url": "/live"
     }
   ]
 }

@@ -60,7 +60,7 @@ export default function LoginPage() {
               登录
             </Button>
             <p className="text-xs text-center text-muted-foreground mt-4">
-              默认账号: admin / admin123
+              管理员账号由环境变量配置，默认为 admin / admin123
             </p>
           </form>
         </CardContent>

@@ -1,0 +1,13 @@
+{
+  "name": "vortex",
+  "build": {
+    "command": "npm run build",
+    "output": ".next"
+  },
+  "start": {
+    "command": "npm start"
+  },
+  "env": {
+    "NODE_ENV": "production"
+  }
+}

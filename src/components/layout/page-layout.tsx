@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { Sidebar } from "./sidebar";
 import { MobileNav } from "./mobile-nav";
-import { User } from "lucide-react";
+import { User, Settings, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -22,6 +23,7 @@ interface PageLayoutProps {
 }
 
 export function PageLayout({ children, className }: PageLayoutProps) {
+  const router = useRouter();
   const [user, setUser] = React.useState<{ username: string; role: string } | null>(null);
 
   React.useEffect(() => {
@@ -36,6 +38,8 @@ export function PageLayout({ children, className }: PageLayoutProps) {
     setUser(null);
     window.location.href = "/login";
   };
+
+  const isAdmin = user?.role === "owner" || user?.role === "admin";
 
   return (
     <div className="min-h-screen bg-background">
@@ -68,6 +72,17 @@ export function PageLayout({ children, className }: PageLayoutProps) {
                         </p>
                       </div>
                     </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => router.push("/settings")}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      设置
+                    </DropdownMenuItem>
+                    {isAdmin && (
+                      <DropdownMenuItem onClick={() => router.push("/admin")}>
+                        <Shield className="mr-2 h-4 w-4" />
+                        管理面板
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout}>
                       退出登录

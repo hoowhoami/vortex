@@ -1,5 +1,17 @@
 import { AppConfig, VideoSourceConfig, DoubanCategory } from "@/types";
 
+// 从环境变量获取管理员配置
+const getAdminUser = () => {
+  const username = process.env.ADMIN_USERNAME || process.env.NEXT_PUBLIC_ADMIN_USERNAME || "admin";
+  const password = process.env.ADMIN_PASSWORD || process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "admin123";
+
+  return {
+    username,
+    password,
+    role: "owner" as const,
+  };
+};
+
 export const DEFAULT_CONFIG: AppConfig = {
   sources: [
     {
@@ -24,15 +36,17 @@ export const DEFAULT_CONFIG: AppConfig = {
       enabled: true,
     },
   ],
-  users: [
-    {
-      username: "admin",
-      password: "admin123",
-      role: "owner",
-    },
-  ],
+  users: [getAdminUser()],
   version: "1.0.0",
 };
+
+export const SITE_CONFIG = {
+  name: process.env.NEXT_PUBLIC_SITE_NAME || "Vortex",
+  announcement: process.env.ANNOUNCEMENT || process.env.NEXT_PUBLIC_ANNOUNCEMENT || "",
+  searchMaxPage: Number(process.env.NEXT_PUBLIC_SEARCH_MAX_PAGE) || 5,
+  fluidSearch: process.env.NEXT_PUBLIC_FLUID_SEARCH !== "false",
+  disableYellowFilter: process.env.NEXT_PUBLIC_DISABLE_YELLOW_FILTER === "true",
+} as const;
 
 export const STORAGE_KEYS = {
   CONFIG: "vortex_config",
@@ -63,4 +77,12 @@ export const REDIS_CONFIG = {
   URL: process.env.REDIS_URL || "",
   UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL || "",
   UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN || "",
+} as const;
+
+export const KVROCKS_CONFIG = {
+  URL: process.env.KVROCKS_URL || "",
+} as const;
+
+export const STORAGE_CONFIG = {
+  type: process.env.NEXT_PUBLIC_STORAGE_TYPE || process.env.STORAGE_TYPE || "local", // local | redis | upstash | kvrocks
 } as const;

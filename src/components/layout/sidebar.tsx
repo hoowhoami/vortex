@@ -9,10 +9,8 @@ import {
   Search,
   Tv,
   Radio,
-  Settings,
   Menu,
   X,
-  User,
   ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,8 +20,6 @@ const navItems = [
   { icon: Search, label: "搜索", href: "/search" },
   { icon: Tv, label: "豆瓣", href: "/douban" },
   { icon: Radio, label: "直播", href: "/live" },
-  { icon: Settings, label: "设置", href: "/settings" },
-  { icon: Settings, label: "管理", href: "/admin", requiresAdmin: true },
 ];
 
 interface SidebarProps {
@@ -34,23 +30,10 @@ export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = React.useState(false);
   const [mobileOpen, setMobileOpen] = React.useState(false);
-  const [user, setUser] = React.useState<{ role: string } | null>(null);
-
-  React.useEffect(() => {
-    // Get user from localStorage
-    const userData = localStorage.getItem("vortex_user");
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
-  }, []);
 
   const handleNavClick = () => {
     setMobileOpen(false);
   };
-
-  const filteredNavItems = navItems.filter(
-    (item) => !item.requiresAdmin || user?.role === "owner" || user?.role === "admin"
-  );
 
   return (
     <>
@@ -98,7 +81,7 @@ export function Sidebar({ className }: SidebarProps) {
 
         {/* Navigation */}
         <nav className="p-2 space-y-1 overflow-y-auto h-[calc(100vh-4rem)]">
-          {filteredNavItems.map((item) => {
+          {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
 
