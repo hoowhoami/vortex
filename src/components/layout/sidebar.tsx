@@ -22,6 +22,7 @@ const navItems = [
   { icon: Search, label: "搜索", href: "/search" },
   { icon: Tv, label: "豆瓣", href: "/douban" },
   { icon: Radio, label: "直播", href: "/live" },
+  { icon: Settings, label: "设置", href: "/settings" },
   { icon: Settings, label: "管理", href: "/admin", requiresAdmin: true },
 ];
 
@@ -66,7 +67,7 @@ export function Sidebar({ className }: SidebarProps) {
         className={cn(
           "fixed top-0 left-0 z-50 h-screen bg-background border-r transition-all duration-300",
           collapsed ? "w-16" : "w-64",
-          "translate-x-0",
+          mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
           className
         )}
       >
