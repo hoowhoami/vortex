@@ -8,7 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { StorageService } from "@/lib/storage";
+import {
+  clearAllPlayRecords,
+  clearAllFavorites,
+  clearSearchHistory,
+  getAllPlayRecords,
+  getAllFavorites,
+  getSearchHistory,
+} from "@/lib/db.client";
 import { Trash2, Download, Upload, RefreshCw } from "lucide-react";
 
 export default function SettingsPage() {
@@ -43,51 +50,77 @@ export default function SettingsPage() {
     localStorage.setItem(key, String(value));
   };
 
-  const handleClearHistory = () => {
+  const handleClearHistory = async () => {
     if (confirm("确定要清空播放记录吗？")) {
-      StorageService.clearPlayRecords();
-      alert("播放记录已清空");
+      try {
+        await clearAllPlayRecords();
+        alert("播放记录已清空");
+      } catch (error) {
+        console.error("Failed to clear play records:", error);
+        alert("清空播放记录失败");
+      }
     }
   };
 
-  const handleClearFavorites = () => {
+  const handleClearFavorites = async () => {
     if (confirm("确定要清空收藏吗？")) {
-      StorageService.clearFavorites();
-      alert("收藏已清空");
+      try {
+        await clearAllFavorites();
+        alert("收藏已清空");
+      } catch (error) {
+        console.error("Failed to clear favorites:", error);
+        alert("清空收藏失败");
+      }
     }
   };
 
-  const handleClearSearchHistory = () => {
+  const handleClearSearchHistory = async () => {
     if (confirm("确定要清空搜索历史吗？")) {
-      StorageService.clearSearchHistory();
-      alert("搜索历史已清空");
+      try {
+        await clearSearchHistory();
+        alert("搜索历史已清空");
+      } catch (error) {
+        console.error("Failed to clear search history:", error);
+        alert("清空搜索历史失败");
+      }
     }
   };
 
-  const handleExportData = () => {
-    const data = {
-      playRecords: StorageService.getPlayRecords(),
-      favorites: StorageService.getFavorites(),
-      searchHistory: StorageService.getSearchHistory(),
-      settings: {
-        doubanDataSource,
-        doubanProxyUrl,
-        doubanImageProxy,
-        defaultAggregateSearch,
-        fluidSearch,
-        enableOptimization,
-        liveDirectConnect,
-      },
-      exportTime: Date.now(),
-    };
+  const handleExportData = async () => {
+    try {
+      const [playRecords, favorites, searchHistory] = await Promise.all([
+        getAllPlayRecords(),
+        getAllFavorites(),
+        getSearchHistory(),
+      ]);
 
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `vortex-backup-${new Date().toISOString().split("T")[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+      const data = {
+        playRecords,
+        favorites,
+        searchHistory,
+        settings: {
+          doubanDataSource,
+          doubanProxyUrl,
+          doubanImageProxy,
+          defaultAggregateSearch,
+          fluidSearch,
+          enableOptimization,
+          liveDirectConnect,
+        },
+        exportTime: Date.now(),
+      };
+
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `vortex-backup-${new Date().toISOString().split("T")[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to export data:", error);
+      alert("导出数据失败");
+    }
   };
 
   const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,43 +128,60 @@ export default function SettingsPage() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const data = JSON.parse(event.target?.result as string);
 
         if (confirm("确定要导入数据吗？这将覆盖当前数据。")) {
-          // 导入播放记录
-          if (data.playRecords) {
-            data.playRecords.forEach((record: any) => {
-              StorageService.savePlayRecord(record);
-            });
-          }
+          try {
+            // Import play records (data format is Record<string, DbPlayRecord>)
+            if (data.playRecords && typeof data.playRecords === "object") {
+              const promises = Object.entries(data.playRecords).map(([key, record]: [string, any]) => {
+                const [source, id] = key.split("+");
+                return import("@/lib/db.client").then(({ savePlayRecord }) =>
+                  savePlayRecord(source, id, record)
+                );
+              });
+              await Promise.all(promises);
+            }
 
-          // 导入收藏
-          if (data.favorites) {
-            data.favorites.forEach((fav: any) => {
-              StorageService.addFavorite(fav);
-            });
-          }
+            // Import favorites (data format is Record<string, DbFavorite>)
+            if (data.favorites && typeof data.favorites === "object") {
+              const promises = Object.entries(data.favorites).map(([key, fav]: [string, any]) => {
+                const [source, id] = key.split("+");
+                return import("@/lib/db.client").then(({ saveFavorite }) =>
+                  saveFavorite(source, id, fav)
+                );
+              });
+              await Promise.all(promises);
+            }
 
-          // 导入搜索历史
-          if (data.searchHistory) {
-            data.searchHistory.forEach((keyword: string) => {
-              StorageService.addSearchHistory(keyword);
-            });
-          }
+            // Import search history (data format is string[])
+            if (data.searchHistory && Array.isArray(data.searchHistory)) {
+              const promises = data.searchHistory.map((keyword: string) =>
+                import("@/lib/db.client").then(({ addSearchHistory }) =>
+                  addSearchHistory(keyword)
+                )
+              );
+              await Promise.all(promises);
+            }
 
-          // 导入设置
-          if (data.settings) {
-            Object.entries(data.settings).forEach(([key, value]) => {
-              localStorage.setItem(key, String(value));
-            });
-          }
+            // Import settings
+            if (data.settings) {
+              Object.entries(data.settings).forEach(([key, value]) => {
+                localStorage.setItem(key, String(value));
+              });
+            }
 
-          alert("数据导入成功！页面将刷新。");
-          window.location.reload();
+            alert("数据导入成功！页面将刷新。");
+            window.location.reload();
+          } catch (importError) {
+            console.error("Import error:", importError);
+            alert("导入失败：数据导入过程中出错");
+          }
         }
       } catch (error) {
+        console.error("Parse error:", error);
         alert("导入失败：文件格式错误");
       }
     };

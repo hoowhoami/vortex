@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search as SearchIcon, Clock, Play } from "lucide-react";
 import type { Video } from "@/types";
-import { StorageService } from "@/lib/storage";
+import { getSearchHistory, addSearchHistory } from "@/lib/db.client";
 
 export default function SearchPage() {
   const router = useRouter();
@@ -18,12 +18,31 @@ export default function SearchPage() {
   const [results, setResults] = React.useState<Video[]>([]);
   const [showSuggestions, setShowSuggestions] = React.useState(true);
 
-  // 搜索历史（从 StorageService 读取）
+  // 搜索历史
   const [searchHistory, setSearchHistory] = React.useState<string[]>([]);
 
+  // Load search history on mount
   React.useEffect(() => {
-    setSearchHistory(StorageService.getSearchHistory());
+    loadSearchHistory();
   }, []);
+
+  // Listen for search history updates
+  React.useEffect(() => {
+    const handleSearchHistoryUpdate = (e: CustomEvent) => {
+      setSearchHistory(e.detail);
+    };
+
+    window.addEventListener("searchHistoryUpdated", handleSearchHistoryUpdate as EventListener);
+
+    return () => {
+      window.removeEventListener("searchHistoryUpdated", handleSearchHistoryUpdate as EventListener);
+    };
+  }, []);
+
+  const loadSearchHistory = async () => {
+    const history = await getSearchHistory();
+    setSearchHistory(history);
+  };
 
   const handleSearch = async (kw?: string) => {
     const searchKeyword = kw || keyword;
@@ -64,9 +83,8 @@ export default function SearchPage() {
         }
       }
 
-      // 保存到搜索历史
-      StorageService.addSearchHistory(searchKeyword);
-      setSearchHistory(StorageService.getSearchHistory());
+      // 保存到搜索历史（自动触发 CustomEvent 更新）
+      await addSearchHistory(searchKeyword);
     } catch (error) {
       console.error("Search error:", error);
     } finally {

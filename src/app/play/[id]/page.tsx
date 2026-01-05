@@ -9,8 +9,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Clock, Heart } from "lucide-react";
-import { StorageService } from "@/lib/storage";
+import {
+  getAllPlayRecords,
+  savePlayRecord,
+  isFavorited,
+  saveFavorite,
+  deleteFavorite,
+} from "@/lib/db.client";
 import type { Video } from "@/types";
+import type { DbPlayRecord, DbFavorite } from "@/lib/db/types";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +50,7 @@ export default function PlayPage() {
   const [currentSourceIndex, setCurrentSourceIndex] = React.useState(0);
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = React.useState(0);
   const [currentTime, setCurrentTime] = React.useState(0);
+  const [duration, setDuration] = React.useState(0);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isFavorite, setIsFavorite] = React.useState(false);
 
@@ -60,20 +68,39 @@ export default function PlayPage() {
           const data = await response.json();
           setVideo(data.video);
 
-          // Check if favorited
-          setIsFavorite(StorageService.isFavorite(videoId));
+          // Check if favorited using first available source
+          if (data.video.sources && data.video.sources.length > 0) {
+            const firstSource = data.video.sources[0].sourceId;
+            const favorited = await isFavorited(firstSource, videoId);
+            setIsFavorite(favorited);
+          }
 
-          // Load play record
-          const record = StorageService.getPlayRecord(videoId);
-          if (record) {
-            // Find the source and episode indices
+          // Load play record from all sources
+          const allRecords = await getAllPlayRecords();
+
+          // Find a matching record for this video
+          let foundRecord: DbPlayRecord | null = null;
+          let recordSourceId = "";
+
+          for (const source of data.video.sources || []) {
+            const key = `${source.sourceId}+${videoId}`;
+            if (allRecords[key]) {
+              foundRecord = allRecords[key];
+              recordSourceId = source.sourceId;
+              break;
+            }
+          }
+
+          if (foundRecord) {
+            // Find the source index
             const sourceIndex = data.video.sources?.findIndex(
-              (s: any) => s.sourceId === record.sourceId
+              (s: any) => s.sourceId === recordSourceId
             );
             if (sourceIndex >= 0) {
               setCurrentSourceIndex(sourceIndex);
-              setCurrentEpisodeIndex(record.episodeIndex);
-              setCurrentTime(record.progress);
+              setCurrentEpisodeIndex(foundRecord.index);
+              setCurrentTime(foundRecord.play_time);
+              setDuration(foundRecord.total_time);
             }
           }
         }
@@ -87,10 +114,29 @@ export default function PlayPage() {
     loadVideoData();
   }, [videoId]);
 
+  // Listen for favorites updates
+  React.useEffect(() => {
+    const handleFavoritesUpdate = async () => {
+      if (video?.sources && video.sources.length > 0) {
+        const firstSource = video.sources[0].sourceId;
+        const favorited = await isFavorited(firstSource, videoId);
+        setIsFavorite(favorited);
+      }
+    };
+
+    window.addEventListener("favoritesUpdated", handleFavoritesUpdate);
+    return () => {
+      window.removeEventListener("favoritesUpdated", handleFavoritesUpdate);
+    };
+  }, [video, videoId]);
+
   // Save play progress (debounced)
   const saveProgressTimeoutRef = React.useRef<NodeJS.Timeout | undefined>(undefined);
-  const handleTimeUpdate = (time: number) => {
+  const handleTimeUpdate = (time: number, videoDuration?: number) => {
     setCurrentTime(time);
+    if (videoDuration) {
+      setDuration(videoDuration);
+    }
 
     if (!video || !currentSource || !currentEpisode) return;
 
@@ -99,18 +145,25 @@ export default function PlayPage() {
       clearTimeout(saveProgressTimeoutRef.current);
     }
 
-    saveProgressTimeoutRef.current = setTimeout(() => {
-      StorageService.savePlayRecord({
-        videoId: video.id,
-        videoTitle: video.title,
-        videoCover: video.cover,
-        sourceId: currentSource.sourceId,
-        sourceName: currentSource.sourceName,
-        episodeIndex: currentEpisodeIndex,
-        episodeName: currentEpisode.name,
-        progress: time,
-        duration: 0, // Will be updated when video ends
-      });
+    saveProgressTimeoutRef.current = setTimeout(async () => {
+      try {
+        const record: DbPlayRecord = {
+          title: video.title,
+          source_name: currentSource.sourceName,
+          cover: video.cover || "",
+          year: video.year || "",
+          index: currentEpisodeIndex,
+          total_episodes: currentSource.episodes.length,
+          play_time: Math.floor(time),
+          total_time: Math.floor(videoDuration || duration || 0),
+          save_time: Date.now(),
+          search_title: video.title,
+        };
+
+        await savePlayRecord(currentSource.sourceId, videoId, record);
+      } catch (error) {
+        console.error("Failed to save play record:", error);
+      }
     }, 2000); // Save every 2 seconds
   };
 
@@ -129,18 +182,32 @@ export default function PlayPage() {
     router.back();
   };
 
-  const handleToggleFavorite = () => {
-    if (!video) return;
+  const handleToggleFavorite = async () => {
+    if (!video || !currentSource) return;
 
-    const newState = StorageService.toggleFavorite({
-      videoId: video.id,
-      videoTitle: video.title,
-      videoCover: video.cover,
-      videoYear: video.year,
-      videoType: video.type,
-    });
+    try {
+      if (isFavorite) {
+        // Remove from favorites
+        await deleteFavorite(currentSource.sourceId, videoId);
+        setIsFavorite(false);
+      } else {
+        // Add to favorites
+        const favorite: DbFavorite = {
+          title: video.title,
+          source_name: currentSource.sourceName,
+          cover: video.cover || "",
+          year: video.year || "",
+          total_episodes: currentSource.episodes.length,
+          save_time: Date.now(),
+          search_title: video.title,
+        };
 
-    setIsFavorite(newState);
+        await saveFavorite(currentSource.sourceId, videoId, favorite);
+        setIsFavorite(true);
+      }
+    } catch (error) {
+      console.error("Failed to toggle favorite:", error);
+    }
   };
 
   if (isLoading) {

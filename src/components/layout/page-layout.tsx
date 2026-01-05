@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils/utils";
+import { getAuthInfoFromBrowserCookie } from "@/lib/auth";
 
 interface PageLayoutProps {
   children: React.ReactNode;
@@ -27,14 +28,23 @@ export function PageLayout({ children, className }: PageLayoutProps) {
   const [user, setUser] = React.useState<{ username: string; role: string } | null>(null);
 
   React.useEffect(() => {
-    const userData = localStorage.getItem("vortex_user");
-    if (userData) {
-      setUser(JSON.parse(userData));
+    if (typeof window !== "undefined") {
+      const authInfo = getAuthInfoFromBrowserCookie();
+      if (authInfo) {
+        setUser({
+          username: authInfo.username || "User",
+          role: authInfo.role || "user",
+        });
+      }
     }
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("vortex_user");
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
     setUser(null);
     window.location.href = "/login";
   };

@@ -152,6 +152,7 @@ export interface User {
   username: string;
   role: UserRole;
   apiKey?: string;
+  banned?: boolean;
 }
 
 export type UserRole = "owner" | "admin" | "user";
@@ -161,6 +162,32 @@ export interface UserConfig {
   password: string;
   role: UserRole;
   apiKey?: string;
+  banned?: boolean;
+  tags?: string[];
+}
+
+// Admin Configuration Types
+export interface AdminConfig {
+  sources: VideoSourceConfig[];
+  categories: DoubanCategory[];
+  liveSources: {
+    name: string;
+    url: string;
+    enabled: boolean;
+    ua?: string;
+    epg?: string;
+  }[];
+  users: UserConfig[];
+  siteConfig: {
+    siteName: string;
+    announcement: string;
+    searchMaxPage: number;
+    fluidSearch: boolean;
+    disableYellowFilter: boolean;
+    doubanProxyType?: "direct" | "proxy" | "custom";
+    doubanProxy?: string;
+  };
+  version: string;
 }
 
 // API Response Types

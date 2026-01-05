@@ -10,7 +10,7 @@ export interface VideoPlayerProps {
   title?: string;
   autoPlay?: boolean;
   startTime?: number;
-  onTimeUpdate?: (currentTime: number) => void;
+  onTimeUpdate?: (currentTime: number, duration?: number) => void;
   onEnded?: () => void;
   onError?: (error: Error) => void;
 }
@@ -73,7 +73,7 @@ export function VideoPlayer({
 
     // Event listeners
     instance.on("video:timeupdate", () => {
-      onTimeUpdate?.(instance.currentTime);
+      onTimeUpdate?.(instance.currentTime, instance.duration);
     });
 
     instance.on("video:ended", () => {
