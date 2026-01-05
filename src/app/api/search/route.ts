@@ -1,20 +1,20 @@
 import { NextRequest } from "next/server";
 import { SearchManager, AppleCMSClient } from "@/lib/api/search";
-import { DEFAULT_CONFIG } from "@/lib/config";
+import { getAvailableApiSites } from "@/lib/config";
+import { getAuthInfoFromCookie } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // 初始化搜索管理器
-function getSearchManager(): SearchManager {
+async function getSearchManager(username?: string): Promise<SearchManager> {
   const manager = new SearchManager();
 
-  // 从配置中注册所有视频源
-  DEFAULT_CONFIG.sources.forEach((source) => {
-    if (source.enabled) {
-      const client = new AppleCMSClient(source.id, source.name, source.api);
-      manager.registerClient(client);
-    }
+  // 从配置中获取用户可访问的视频源
+  const sources = await getAvailableApiSites(username);
+  sources.forEach((source: any) => {
+    const client = new AppleCMSClient(source.key, source.name, source.api);
+    manager.registerClient(client);
   });
 
   return manager;
@@ -31,7 +31,11 @@ export async function GET(request: NextRequest) {
     return new Response("Keyword is required", { status: 400 });
   }
 
-  const manager = getSearchManager();
+  // Get username from auth
+  const authInfo = getAuthInfoFromCookie(request);
+  const username = authInfo?.username;
+
+  const manager = await getSearchManager(username);
 
   // 创建 SSE 流
   const encoder = new TextEncoder();

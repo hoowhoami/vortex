@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
 
     // Check if user exists in configuration
     const config = await getConfig();
-    const user = config.users.find((u) => u.username === username);
+    const user = config.UserConfig.Users.find((u: any) => u.username === username);
     if (user && user.banned) {
       return NextResponse.json({ error: "User is banned" }, { status: 401 });
     }

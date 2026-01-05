@@ -45,13 +45,15 @@ export interface SearchResult {
 export interface DoubanItem {
   id: string;
   title: string;
+  poster: string;
+  rate: string;
   year: string;
-  rating: number;
-  cover: string;
-  type: VideoType;
-  actors: string[];
-  director: string[];
-  area: string;
+}
+
+export interface DoubanResult {
+  code: number;
+  message: string;
+  list: DoubanItem[];
 }
 
 export interface DoubanCategory {
@@ -166,34 +168,83 @@ export interface UserConfig {
   tags?: string[];
 }
 
-// Admin Configuration Types
-export interface AdminConfig {
-  sources: VideoSourceConfig[];
-  categories: DoubanCategory[];
-  liveSources: {
-    name: string;
-    url: string;
-    enabled: boolean;
-    ua?: string;
-    epg?: string;
-  }[];
-  users: UserConfig[];
-  siteConfig: {
-    siteName: string;
-    announcement: string;
-    searchMaxPage: number;
-    fluidSearch: boolean;
-    disableYellowFilter: boolean;
-    doubanProxyType?: "direct" | "proxy" | "custom";
-    doubanProxy?: string;
-  };
-  version: string;
-}
-
 // API Response Types
 export interface APIResponse<T = any> {
   success: boolean;
   data?: T;
   error?: string;
   message?: string;
+}
+
+// ==================== Admin Panel Types ====================
+
+/**
+ * Admin configuration structure
+ * This is the complete configuration for the admin panel
+ */
+export interface AdminConfig {
+  ConfigSubscription: {
+    URL: string;
+    AutoUpdate: boolean;
+    LastCheck: string;
+  };
+  ConfigFile: string;
+  SiteConfig: {
+    SiteName: string;
+    Announcement: string;
+    SearchDownstreamMaxPage: number;
+    SiteInterfaceCacheTime: number;
+    DoubanProxyType: string;
+    DoubanProxy: string;
+    DoubanImageProxyType: string;
+    DoubanImageProxy: string;
+    DisableYellowFilter: boolean;
+    FluidSearch: boolean;
+  };
+  UserConfig: {
+    Users: {
+      username: string;
+      role: "user" | "admin" | "owner";
+      banned?: boolean;
+      enabledApis?: string[]; // Higher priority than tags restriction
+      tags?: string[]; // Multiple tags take union of restrictions
+    }[];
+    Tags?: {
+      name: string;
+      enabledApis: string[];
+    }[];
+  };
+  SourceConfig: {
+    key: string;
+    name: string;
+    api: string;
+    detail?: string;
+    from: "config" | "custom";
+    disabled?: boolean;
+  }[];
+  CustomCategories: {
+    name?: string;
+    type: "movie" | "tv";
+    query: string;
+    from: "config" | "custom";
+    disabled?: boolean;
+  }[];
+  LiveConfig?: {
+    key: string;
+    name: string;
+    url: string; // m3u address
+    ua?: string;
+    epg?: string; // EPG program guide
+    from: "config" | "custom";
+    channelNumber?: number;
+    disabled?: boolean;
+  }[];
+}
+
+/**
+ * Admin API response with role information
+ */
+export interface AdminConfigResult {
+  Role: "owner" | "admin";
+  Config: AdminConfig;
 }

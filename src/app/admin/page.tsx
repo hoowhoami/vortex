@@ -1,227 +1,221 @@
-"use client";
+/**
+ * Admin Panel - Main Page
+ * Modular, maintainable admin interface using shadcn/ui components
+ */
 
-import * as React from "react";
-import { PageLayout } from "@/components/layout/page-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
-import { DEFAULT_CONFIG, SITE_CONFIG } from "@/lib/config";
-import { Plus, Trash2 } from "lucide-react";
+'use client';
 
-export default function AdminPage() {
-  const [siteConfig, setSiteConfig] = React.useState(SITE_CONFIG);
-  const [sources, setSources] = React.useState(DEFAULT_CONFIG.sources);
-  const users = DEFAULT_CONFIG.users;
+import { Suspense, useEffect, useState } from 'react';
+import { AlertTriangle } from 'lucide-react';
+import { PageLayout } from '@/components/layout/page-layout';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { AdminConfig, AdminConfigResult } from '@/types';
+import { getAuthInfoFromBrowserCookie } from '@/lib/auth';
+
+// Lazy load admin components
+import { UserManagement } from '@/components/admin/user-management';
+import { SiteConfig } from '@/components/admin/site-config';
+import { SourceManagement } from '@/components/admin/source-management';
+import { CategoryManagement } from '@/components/admin/category-management';
+import { LiveManagement } from '@/components/admin/live-management';
+import { ConfigFile } from '@/components/admin/config-file';
+import DataMigration from '@/components/admin-data-migration';
+
+// Storage type check
+const STORAGE_TYPE = (() => {
+  if (typeof window === 'undefined') return 'localstorage';
+  const raw =
+    (window as any).RUNTIME_CONFIG?.STORAGE_TYPE ||
+    process.env.NEXT_PUBLIC_STORAGE_TYPE ||
+    'localstorage';
+  return raw as 'localstorage' | 'redis' | 'upstash' | 'kvrocks';
+})();
+
+function AdminPageClient() {
+  const [config, setConfig] = useState<AdminConfig | null>(null);
+  const [role, setRole] = useState<'owner' | 'admin' | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchConfig = async () => {
+    try {
+      const res = await fetch('/api/admin/config');
+      if (!res.ok) {
+        throw new Error('Failed to fetch config');
+      }
+      const data: AdminConfigResult = await res.json();
+      setConfig(data.Config);
+      setRole(data.Role);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchConfig();
+  }, []);
+
+  if (loading) {
+    return (
+      <PageLayout>
+        <div className="space-y-6">
+          <Skeleton className="h-12 w-64" />
+          <Skeleton className="h-96 w-full" />
+        </div>
+      </PageLayout>
+    );
+  }
+
+  if (error || !config) {
+    return (
+      <PageLayout>
+        <Card className="border-destructive">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              <p>加载配置失败: {error}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout>
-      <div className="space-y-6 max-w-6xl mx-auto">
+      <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">管理后台</h1>
+          <h1 className="text-3xl font-bold tracking-tight">管理面板</h1>
           <p className="text-muted-foreground">
-            配置和管理系统
+            系统配置和管理 · 当前角色: {role === 'owner' ? '所有者' : '管理员'}
           </p>
         </div>
 
-        <Tabs defaultValue="site">
-          <TabsList className="grid w-full max-w-md grid-cols-4">
-            <TabsTrigger value="site">站点配置</TabsTrigger>
-            <TabsTrigger value="sources">视频源</TabsTrigger>
-            <TabsTrigger value="users">用户管理</TabsTrigger>
-            <TabsTrigger value="about">关于</TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="users" className="space-y-6">
+          {/* Mobile: Scrollable tabs */}
+          <div className="lg:hidden">
+            <TabsList className="inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground w-full overflow-x-auto">
+              <TabsTrigger value="users" className="whitespace-nowrap">用户</TabsTrigger>
+              <TabsTrigger value="sources" className="whitespace-nowrap">视频源</TabsTrigger>
+              <TabsTrigger value="categories" className="whitespace-nowrap">分类</TabsTrigger>
+              <TabsTrigger value="live" className="whitespace-nowrap">直播</TabsTrigger>
+              <TabsTrigger value="site" className="whitespace-nowrap">站点</TabsTrigger>
+              <TabsTrigger value="config" className="whitespace-nowrap">配置</TabsTrigger>
+              <TabsTrigger value="migration" className="whitespace-nowrap">迁移</TabsTrigger>
+              {role === 'owner' && <TabsTrigger value="advanced" className="whitespace-nowrap">高级</TabsTrigger>}
+            </TabsList>
+          </div>
 
-          {/* 站点配置 */}
-          <TabsContent value="site" className="space-y-4 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>站点信息</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-2">站点名称</label>
-                  <Input
-                    value={siteConfig.name}
-                    onChange={(e) => setSiteConfig({ ...siteConfig, name: e.target.value })}
-                    placeholder="Vortex"
-                  />
-                </div>
+          {/* Desktop: Grid layout */}
+          <div className="hidden lg:block">
+            <TabsList className="grid w-full grid-cols-8">
+              <TabsTrigger value="users">用户</TabsTrigger>
+              <TabsTrigger value="sources">视频源</TabsTrigger>
+              <TabsTrigger value="categories">分类</TabsTrigger>
+              <TabsTrigger value="live">直播</TabsTrigger>
+              <TabsTrigger value="site">站点</TabsTrigger>
+              <TabsTrigger value="config">配置</TabsTrigger>
+              <TabsTrigger value="migration">迁移</TabsTrigger>
+              {role === 'owner' && <TabsTrigger value="advanced">高级</TabsTrigger>}
+            </TabsList>
+          </div>
 
-                <div>
-                  <label className="text-sm font-medium mb-2">站点公告</label>
-                  <Textarea
-                    value={siteConfig.announcement}
-                    onChange={(e) => setSiteConfig({ ...siteConfig, announcement: e.target.value })}
-                    placeholder="输入站点公告..."
-                    rows={3}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">流式搜索</p>
-                    <p className="text-xs text-muted-foreground">实时显示搜索结果</p>
-                  </div>
-                  <Switch
-                    checked={siteConfig.fluidSearch}
-                    onCheckedChange={(checked) => setSiteConfig({ ...siteConfig, fluidSearch: checked })}
-                  />
-                </div>
-
-                <Button onClick={() => alert("配置已保存（本地演示）")}>
-                  保存配置
-                </Button>
-              </CardContent>
-            </Card>
+          <TabsContent value="users" className="space-y-4">
+            <UserManagement config={config} onUpdate={fetchConfig} />
           </TabsContent>
 
-          {/* 视频源管理 */}
-          <TabsContent value="sources" className="space-y-4 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>视频源管理</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {sources.map((source, index) => (
-                    <div key={source.id} className="flex items-center gap-2 p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <Input
-                          value={source.name}
-                          onChange={(e) => {
-                            const newSources = [...sources];
-                            newSources[index] = { ...source, name: e.target.value };
-                            setSources(newSources);
-                          }}
-                        />
-                        <Input
-                          className="mt-2"
-                          value={source.api}
-                          onChange={(e) => {
-                            const newSources = [...sources];
-                            newSources[index] = { ...source, api: e.target.value };
-                            setSources(newSources);
-                          }}
-                          placeholder="API 地址"
-                        />
-                      </div>
-                      <Switch
-                        checked={source.enabled}
-                        onCheckedChange={(checked) => {
-                          const newSources = [...sources];
-                          newSources[index] = { ...source, enabled: checked };
-                          setSources(newSources);
-                        }}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          if (confirm("确定删除此视频源？")) {
-                            setSources(sources.filter((s) => s.id !== source.id));
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => {
-                      const newSource = {
-                        id: `source-${Date.now()}`,
-                        name: `新视频源 ${sources.length + 1}`,
-                        enabled: true,
-                        api: "https://example.com/api",
-                        type: "applev10" as const,
-                        priority: sources.length + 1,
-                      };
-                      setSources([...sources, newSource]);
-                    }}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    添加视频源
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="sources" className="space-y-4">
+            <SourceManagement config={config} onUpdate={fetchConfig} />
           </TabsContent>
 
-          {/* 用户管理 */}
-          <TabsContent value="users" className="space-y-4 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>用户管理</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {users.map((user: { username: string; role: string }, index: number) => (
-                    <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <p className="font-medium">{user.username}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {user.role === "owner" ? "所有者" : user.role === "admin" ? "管理员" : "用户"}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          user.role === "owner" ? "bg-red-500 text-white" :
-                          user.role === "admin" ? "bg-blue-500 text-white" :
-                          "bg-gray-500 text-white"
-                        }`}>
-                          {user.role}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                  <p className="text-sm text-muted-foreground">
-                    管理员账号由环境变量配置
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="categories" className="space-y-4">
+            <CategoryManagement config={config} onUpdate={fetchConfig} />
           </TabsContent>
 
-          {/* 关于 */}
-          <TabsContent value="about" className="space-y-4 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>关于</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <p className="text-sm font-medium">版本</p>
-                  <p className="text-sm text-muted-foreground">{DEFAULT_CONFIG.version}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium">技术栈</p>
-                  <p className="text-sm text-muted-foreground">
-                    Next.js 15 + React 19 + ShadcnUI + TailwindCSS
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium">容器化支持</p>
-                  <p className="text-sm text-muted-foreground">
-                    Docker + Zeabur 部署就绪
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium">多存储支持</p>
-                  <p className="text-sm text-sm text-muted-foreground">
-                    LocalStorage / Redis / Upstash / Kvrocks
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="live" className="space-y-4">
+            <LiveManagement config={config} onUpdate={fetchConfig} />
           </TabsContent>
+
+          <TabsContent value="site" className="space-y-4">
+            <SiteConfig config={config} onUpdate={fetchConfig} />
+          </TabsContent>
+
+          <TabsContent value="config" className="space-y-4">
+            <ConfigFile config={config} onUpdate={fetchConfig} />
+          </TabsContent>
+
+          <TabsContent value="migration" className="space-y-4">
+            <DataMigration onRefreshConfig={fetchConfig} />
+          </TabsContent>
+
+          {role === 'owner' && (
+            <TabsContent value="advanced" className="space-y-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-muted-foreground">高级设置模块开发中...</p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </PageLayout>
+  );
+}
+
+export default function AdminPage() {
+  // Check storage type - block access if using localstorage
+  if (STORAGE_TYPE === 'localstorage') {
+    return (
+      <PageLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Card className="max-w-2xl border-yellow-200 dark:border-yellow-800">
+            <CardContent className="pt-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <AlertTriangle className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
+                <h2 className="text-2xl font-bold text-yellow-800 dark:text-yellow-300">
+                  管理面板不可用
+                </h2>
+              </div>
+              <div className="space-y-3 text-yellow-700 dark:text-yellow-400">
+                <p>
+                  LocalStorage 模式不支持管理面板功能。管理面板需要数据库后端来存储配置和用户数据。
+                </p>
+                <p className="font-medium">请配置数据库后端：</p>
+                <ul className="list-disc list-inside space-y-1 ml-4">
+                  <li>Redis (本地开发推荐)</li>
+                  <li>Upstash (云端 Redis，有免费套餐)</li>
+                  <li>Kvrocks (Redis 兼容)</li>
+                </ul>
+                <div className="mt-4 pt-4 border-t border-yellow-200 dark:border-yellow-700">
+                  <p className="text-sm">
+                    修改 <code className="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded">.env.local</code> 文件中的{' '}
+                    <code className="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded">NEXT_PUBLIC_STORAGE_TYPE</code> 为{' '}
+                    <code className="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded">redis</code> 或其他数据库类型。
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  return (
+    <Suspense fallback={
+      <PageLayout>
+        <div className="space-y-6">
+          <Skeleton className="h-12 w-64" />
+          <Skeleton className="h-96 w-full" />
+        </div>
+      </PageLayout>
+    }>
+      <AdminPageClient />
+    </Suspense>
   );
 }

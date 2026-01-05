@@ -104,11 +104,7 @@ export function generateMockDoubanData(count: number): DoubanItem[] {
     id: `douban-${i + 1}`,
     title: titles[i % titles.length] || `电影标题 ${i + 1}`,
     year: `${2020 - (i % 10)}`,
-    rating: 8.0 + Math.random() * 1.5,
-    cover: `https://picsum.photos/200/300?random=${i}`,
-    type: types[i % types.length],
-    actors: ["演员A", "演员B", "演员C"],
-    director: ["导演A"],
-    area: i % 3 === 0 ? "中国大陆" : i % 3 === 1 ? "美国" : "日本",
+    rate: `${(8.0 + Math.random() * 1.5).toFixed(1)}`,
+    poster: `https://picsum.photos/200/300?random=${i}`,
   }));
 }

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { AppleCMSClient } from "@/lib/api/search";
-import { DEFAULT_CONFIG } from "@/lib/config";
+import { getAvailableApiSites } from "@/lib/config";
+import { getAuthInfoFromCookie } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,15 +19,20 @@ export async function GET(request: NextRequest) {
     // 解析 videoId 获取源ID
     const sourceId = videoId.split("-")[0];
 
+    // Get username from auth
+    const authInfo = getAuthInfoFromCookie(request);
+    const username = authInfo?.username;
+
     // 查找对应的源配置
-    const sourceConfig = DEFAULT_CONFIG.sources.find((s) => s.id === sourceId);
-    if (!sourceConfig || !sourceConfig.enabled) {
+    const sources = await getAvailableApiSites(username);
+    const sourceConfig = sources.find((s: any) => s.key === sourceId);
+    if (!sourceConfig) {
       return Response.json({ error: "Source not found or disabled" }, { status: 404 });
     }
 
     // 创建客户端并获取详情
     const client = new AppleCMSClient(
-      sourceConfig.id,
+      sourceConfig.key,
       sourceConfig.name,
       sourceConfig.api
     );

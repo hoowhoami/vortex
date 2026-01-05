@@ -394,7 +394,7 @@ export async function getAllPlayRecords(): Promise<Record<string, DbPlayRecord>>
   }
 
   // Database mode: hybrid cache strategy
-  if (STORAGE_TYPE !== "local") {
+  if (STORAGE_TYPE !== "localstorage") {
     const cachedData = cacheManager.getCachedPlayRecords();
 
     if (cachedData) {
@@ -454,7 +454,7 @@ export async function savePlayRecord(
   const key = generateStorageKey(source, id);
 
   // Database mode: optimistic update
-  if (STORAGE_TYPE !== "local") {
+  if (STORAGE_TYPE !== "localstorage") {
     // Update cache immediately
     const cachedRecords = cacheManager.getCachedPlayRecords() || {};
     cachedRecords[key] = record;
@@ -514,7 +514,7 @@ export async function deletePlayRecord(source: string, id: string): Promise<void
   const key = generateStorageKey(source, id);
 
   // Database mode: optimistic update
-  if (STORAGE_TYPE !== "local") {
+  if (STORAGE_TYPE !== "localstorage") {
     // Update cache immediately
     const cachedRecords = cacheManager.getCachedPlayRecords() || {};
     delete cachedRecords[key];
@@ -562,6 +562,56 @@ export async function deletePlayRecord(source: string, id: string): Promise<void
   }
 }
 
+/**
+ * Clear all play records
+ * Database mode: Optimistic update
+ */
+export async function clearAllPlayRecords(): Promise<void> {
+  // Database mode: optimistic update
+  if (STORAGE_TYPE !== "localstorage") {
+    // Update cache immediately
+    cacheManager.cachePlayRecords({});
+
+    // Trigger immediate update event
+    window.dispatchEvent(
+      new CustomEvent("playRecordsUpdated", {
+        detail: {},
+      })
+    );
+
+    // Async sync to database - delete all play records (without key parameter)
+    try {
+      await fetchWithAuth("/api/playrecords", {
+        method: "DELETE",
+      });
+    } catch (err) {
+      await handleDatabaseOperationFailure("playRecords", err);
+      triggerGlobalError("Failed to clear all play records");
+      throw err;
+    }
+    return;
+  }
+
+  // LocalStorage mode
+  if (typeof window === "undefined") {
+    console.warn("Cannot clear play records from localStorage on server");
+    return;
+  }
+
+  try {
+    localStorage.removeItem(PLAY_RECORDS_KEY);
+    window.dispatchEvent(
+      new CustomEvent("playRecordsUpdated", {
+        detail: {},
+      })
+    );
+  } catch (err) {
+    console.error("Failed to clear play records:", err);
+    triggerGlobalError("Failed to clear play records");
+    throw err;
+  }
+}
+
 // ==================== Favorites ====================
 
 /**
@@ -574,7 +624,7 @@ export async function getAllFavorites(): Promise<Record<string, DbFavorite>> {
   }
 
   // Database mode: hybrid cache strategy
-  if (STORAGE_TYPE !== "local") {
+  if (STORAGE_TYPE !== "localstorage") {
     const cachedData = cacheManager.getCachedFavorites();
 
     if (cachedData) {
@@ -634,7 +684,7 @@ export async function saveFavorite(
   const key = generateStorageKey(source, id);
 
   // Database mode: optimistic update
-  if (STORAGE_TYPE !== "local") {
+  if (STORAGE_TYPE !== "localstorage") {
     // Update cache immediately
     const cachedFavorites = cacheManager.getCachedFavorites() || {};
     cachedFavorites[key] = favorite;
@@ -694,7 +744,7 @@ export async function deleteFavorite(source: string, id: string): Promise<void> 
   const key = generateStorageKey(source, id);
 
   // Database mode: optimistic update
-  if (STORAGE_TYPE !== "local") {
+  if (STORAGE_TYPE !== "localstorage") {
     // Update cache immediately
     const cachedFavorites = cacheManager.getCachedFavorites() || {};
     delete cachedFavorites[key];
@@ -743,6 +793,56 @@ export async function deleteFavorite(source: string, id: string): Promise<void> 
 }
 
 /**
+ * Clear all favorites
+ * Database mode: Optimistic update
+ */
+export async function clearAllFavorites(): Promise<void> {
+  // Database mode: optimistic update
+  if (STORAGE_TYPE !== "localstorage") {
+    // Update cache immediately
+    cacheManager.cacheFavorites({});
+
+    // Trigger immediate update event
+    window.dispatchEvent(
+      new CustomEvent("favoritesUpdated", {
+        detail: {},
+      })
+    );
+
+    // Async sync to database - delete all favorites (without key parameter)
+    try {
+      await fetchWithAuth("/api/favorites", {
+        method: "DELETE",
+      });
+    } catch (err) {
+      await handleDatabaseOperationFailure("favorites", err);
+      triggerGlobalError("Failed to clear all favorites");
+      throw err;
+    }
+    return;
+  }
+
+  // LocalStorage mode
+  if (typeof window === "undefined") {
+    console.warn("Cannot clear favorites from localStorage on server");
+    return;
+  }
+
+  try {
+    localStorage.removeItem(FAVORITES_KEY);
+    window.dispatchEvent(
+      new CustomEvent("favoritesUpdated", {
+        detail: {},
+      })
+    );
+  } catch (err) {
+    console.error("Failed to clear favorites:", err);
+    triggerGlobalError("Failed to clear favorites");
+    throw err;
+  }
+}
+
+/**
  * Check if favorited
  */
 export async function isFavorited(source: string, id: string): Promise<boolean> {
@@ -763,7 +863,7 @@ export async function getSearchHistory(): Promise<string[]> {
   }
 
   // Database mode: hybrid cache strategy
-  if (STORAGE_TYPE !== "local") {
+  if (STORAGE_TYPE !== "localstorage") {
     const cachedData = cacheManager.getCachedSearchHistory();
 
     if (cachedData) {
@@ -821,7 +921,7 @@ export async function addSearchHistory(keyword: string): Promise<void> {
   if (!trimmed) return;
 
   // Database mode: optimistic update
-  if (STORAGE_TYPE !== "local") {
+  if (STORAGE_TYPE !== "localstorage") {
     // Update cache immediately
     const cachedHistory = cacheManager.getCachedSearchHistory() || [];
     const newHistory = [trimmed, ...cachedHistory.filter((k) => k !== trimmed)];
@@ -881,7 +981,7 @@ export async function addSearchHistory(keyword: string): Promise<void> {
  */
 export async function clearSearchHistory(): Promise<void> {
   // Database mode: optimistic update
-  if (STORAGE_TYPE !== "local") {
+  if (STORAGE_TYPE !== "localstorage") {
     // Update cache immediately
     cacheManager.cacheSearchHistory([]);
 
@@ -922,7 +1022,7 @@ export async function deleteSearchHistoryKeyword(keyword: string): Promise<void>
   if (!trimmed) return;
 
   // Database mode: optimistic update
-  if (STORAGE_TYPE !== "local") {
+  if (STORAGE_TYPE !== "localstorage") {
     // Update cache immediately
     const cachedHistory = cacheManager.getCachedSearchHistory() || [];
     const newHistory = cachedHistory.filter((k) => k !== trimmed);

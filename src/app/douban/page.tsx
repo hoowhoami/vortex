@@ -26,8 +26,8 @@ export default function DoubanPage() {
       try {
         // TODO: Replace with actual API calls
         await new Promise((resolve) => setTimeout(resolve, 500));
-        setHotMovies(generateMockDoubanData(20).filter(item => item.type === 'movie'));
-        setHotTvs(generateMockDoubanData(20).filter(item => item.type === 'tv'));
+        setHotMovies(generateMockDoubanData(20));
+        setHotTvs(generateMockDoubanData(20));
         setTop250(generateMockDoubanData(50));
       } catch (error) {
         console.error("Failed to load Douban data:", error);
@@ -53,7 +53,7 @@ export default function DoubanPage() {
       <CardContent className="p-0">
         <div className="relative aspect-[2/3] bg-muted rounded-t-lg overflow-hidden">
           <img
-            src={item.cover}
+            src={item.poster}
             alt={item.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
           />
@@ -62,7 +62,7 @@ export default function DoubanPage() {
           </div>
           <div className="absolute top-2 right-2 bg-black/80 text-white px-2 py-1 rounded text-xs flex items-center gap-1">
             <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-            {item.rating.toFixed(1)}
+            {item.rate}
           </div>
         </div>
         <div className="p-3">
@@ -70,13 +70,8 @@ export default function DoubanPage() {
             {item.title}
           </h3>
           <p className="text-xs text-muted-foreground mb-1">
-            {item.year} · {item.area}
+            {item.year}
           </p>
-          {item.director && item.director.length > 0 && (
-            <p className="text-xs text-muted-foreground line-clamp-1">
-              {item.director.join(" / ")}
-            </p>
-          )}
         </div>
       </CardContent>
     </Card>
