@@ -8,7 +8,7 @@ import { EpisodeSelector, VideoSource } from "@/components/video/episode-selecto
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Clock, Heart } from "lucide-react";
+import { Heart } from "lucide-react";
 import {
   getAllPlayRecords,
   savePlayRecord,
@@ -18,6 +18,7 @@ import {
 } from "@/lib/db.client";
 import type { Video } from "@/types";
 import type { DbPlayRecord, DbFavorite } from "@/lib/db/types";
+import { cn } from "@/lib/utils/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -98,6 +99,7 @@ export default function PlayPage() {
 
   const currentSource = video?.sources?.[currentSourceIndex];
   const currentEpisode = currentSource?.episodes[currentEpisodeIndex];
+  const totalEpisodes = currentSource?.episodes?.length || 0;
 
   // Load video details and play record
   React.useEffect(() => {
@@ -388,83 +390,129 @@ export default function PlayPage() {
 
   return (
     <PageLayout>
-      <div className="flex flex-col gap-4 py-4 px-5 lg:px-[3rem] 2xl:px-20">
-        {/* Header - Episode Title */}
+      <div className="flex flex-col gap-3 py-4 px-5 lg:px-[3rem] 2xl:px-20">
+        {/* Header - Video Title */}
         <div className="py-1">
-          <h1 className="text-2xl font-bold">
-            {video?.title || "未知标题"} &gt; 第{currentEpisodeIndex + 1}集
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+            {video?.title || "未知标题"}
+            {totalEpisodes > 1 && (
+              <span className="text-gray-500 dark:text-gray-400">
+                {` > 第 ${currentEpisodeIndex + 1} 集`}
+              </span>
+            )}
           </h1>
         </div>
 
-        {/* Video Player and Episode Selector */}
-        <div className="grid gap-4 lg:grid-cols-4">
-          {/* Player Section */}
-          <div className="lg:col-span-3">
-            <div className="bg-black rounded-xl overflow-hidden">
-              {currentEpisode && (
-                <VideoPlayer
-                  url={currentEpisode.url}
-                  poster={video?.cover}
-                  title={`${video?.title || ""} - ${currentEpisode.name}`}
-                  autoPlay={false}
-                  startTime={currentTime}
-                  onTimeUpdate={handleTimeUpdate}
-                  onEnded={handleNextEpisode}
-                  skipConfig={skipConfig}
-                />
+        {/* Player and Episode Selector */}
+        <div className="space-y-2">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-4 lg:h-[500px] xl:h-[650px] 2xl:h-[750px]">
+            {/* Video Player */}
+            <div className="md:col-span-3 h-full">
+              <div className="relative w-full h-[300px] lg:h-full">
+                <div className="bg-black w-full h-full rounded-xl overflow-hidden shadow-lg">
+                  {currentEpisode && (
+                    <VideoPlayer
+                      url={currentEpisode.url}
+                      poster={video?.cover}
+                      title={`${video?.title || ""} - ${currentEpisode.name}`}
+                      autoPlay={false}
+                      startTime={currentTime}
+                      onTimeUpdate={handleTimeUpdate}
+                      onEnded={handleNextEpisode}
+                      skipConfig={skipConfig}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Episode Selector */}
+            <div className="md:col-span-1 h-[300px] lg:h-full md:overflow-hidden">
+              {video?.sources && video.sources.length > 0 && (
+                <Card className="h-full">
+                  <CardContent className="p-4 h-full overflow-y-auto">
+                    <EpisodeSelector
+                      sources={video.sources}
+                      currentSourceIndex={currentSourceIndex}
+                      currentEpisodeIndex={currentEpisodeIndex}
+                      onSourceChange={handleSourceChange}
+                      onEpisodeChange={handleEpisodeChange}
+                    />
+                  </CardContent>
+                </Card>
               )}
             </div>
-          </div>
-
-          {/* Episode Selector Section */}
-          <div className="lg:col-span-1">
-            {video?.sources && video.sources.length > 0 && (
-              <Card>
-                <CardContent className="p-4">
-                  <EpisodeSelector
-                    sources={video.sources}
-                    currentSourceIndex={currentSourceIndex}
-                    currentEpisodeIndex={currentEpisodeIndex}
-                    onSourceChange={handleSourceChange}
-                    onEpisodeChange={handleEpisodeChange}
-                  />
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
 
         {/* Video Details */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {/* Info Section */}
-          <div className="md:col-span-3 space-y-4">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">{video?.title}</h1>
-              <p className="text-sm text-muted-foreground mb-1">
-                {video?.year} · {video?.type}
-              </p>
-              {video?.actors && video.actors.length > 0 && (
-                <p className="text-sm text-muted-foreground">
-                  主演: {video.actors?.join(" / ")}
-                </p>
-              )}
-              {video?.director && video.director.length > 0 && (
-                <p className="text-sm text-muted-foreground">
-                  导演: {video.director?.join(" / ")}
-                </p>
+          {/* Cover - Show first on mobile, last on desktop */}
+          <div className="md:col-span-1 md:order-first">
+            <div className="pl-0 py-4 pr-0 md:pr-6">
+              {video?.cover && (
+                <div className="relative bg-gray-300 dark:bg-gray-700 aspect-[2/3] flex items-center justify-center rounded-xl overflow-hidden">
+                  <img
+                    src={video.cover}
+                    alt={video.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
               )}
             </div>
           </div>
 
-          {/* Cover Section */}
-          <div className="md:col-span-1">
-            {video?.cover && (
-              <img
-                src={video.cover}
-                alt={video.title}
-                className="w-full rounded-lg shadow-lg"
-              />
-            )}
+          {/* Info Section */}
+          <div className="md:col-span-3">
+            <div className="p-6 flex flex-col min-h-0">
+              {/* Title with Favorite Button */}
+              <div className="flex items-center mb-2">
+                <h1 className="text-3xl font-bold tracking-wide flex-1">
+                  {video?.title}
+                </h1>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleToggleFavorite}
+                  className="ml-3 flex-shrink-0"
+                >
+                  <Heart
+                    className={cn(
+                      "h-6 w-6",
+                      isFavorite
+                        ? "fill-red-600 stroke-red-600"
+                        : "stroke-current"
+                    )}
+                  />
+                </Button>
+              </div>
+
+              {/* Metadata */}
+              <div className="flex flex-wrap items-center gap-3 text-base mb-4 opacity-80">
+                {video?.year && <span>{video.year}</span>}
+                {video?.type && <span>{video.type}</span>}
+                {video?.area && <span>{video.area}</span>}
+              </div>
+
+              {/* Actors and Director */}
+              {video?.actors && video.actors.length > 0 && (
+                <p className="text-sm text-muted-foreground mb-2">
+                  主演: {video.actors?.join(" / ")}
+                </p>
+              )}
+              {video?.director && video.director.length > 0 && (
+                <p className="text-sm text-muted-foreground mb-4">
+                  导演: {video.director?.join(" / ")}
+                </p>
+              )}
+
+              {/* Description */}
+              {video?.remarks && (
+                <div className="mt-2 text-base leading-relaxed opacity-90">
+                  <p className="whitespace-pre-line">{video.remarks}</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
