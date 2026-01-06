@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { PageLayout } from "@/components/layout/page-layout";
 import { VideoPlayer } from "@/components/video/video-player";
 import { EpisodeSelector, VideoSource } from "@/components/video/episode-selector";
@@ -44,7 +44,9 @@ const mockVideoSources: VideoSource[] = [
 export default function PlayPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const videoId = params.id as string;
+  const sourceParam = searchParams.get("source") || "";
 
   const [video, setVideo] = React.useState<Video | null>(null);
   const [currentSourceIndex, setCurrentSourceIndex] = React.useState(0);
@@ -54,6 +56,46 @@ export default function PlayPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [isFavorite, setIsFavorite] = React.useState(false);
 
+  // Skip intro/outro configuration
+  const [skipConfig, setSkipConfig] = React.useState<{
+    enable: boolean;
+    intro_time: number;
+    outro_time: number;
+  }>({
+    enable: false,
+    intro_time: 0,
+    outro_time: 0,
+  });
+
+  // Load skip config from localStorage on mount
+  React.useEffect(() => {
+    const loadSkipConfig = () => {
+      try {
+        const saved = localStorage.getItem(`skip_${videoId}`);
+        if (saved) {
+          setSkipConfig(JSON.parse(saved));
+        }
+      } catch (error) {
+        console.error("Failed to load skip config:", error);
+      }
+    };
+
+    loadSkipConfig();
+  }, [videoId]);
+
+  // Save skip config when it changes
+  React.useEffect(() => {
+    const saveSkipConfig = () => {
+      try {
+        localStorage.setItem(`skip_${videoId}`, JSON.stringify(skipConfig));
+      } catch (error) {
+        console.error("Failed to save skip config:", error);
+      }
+    };
+
+    saveSkipConfig();
+  }, [skipConfig, videoId]);
+
   const currentSource = video?.sources?.[currentSourceIndex];
   const currentEpisode = currentSource?.episodes[currentEpisodeIndex];
 
@@ -62,16 +104,39 @@ export default function PlayPage() {
     const loadVideoData = async () => {
       setIsLoading(true);
       try {
-        // Load video details from API
-        const response = await fetch(`/api/detail?id=${videoId}`);
+        console.log('[Play Page] Fetching detail for videoId:', videoId, 'sourceParam:', sourceParam);
+
+        // Check if source parameter is provided
+        if (!sourceParam) {
+          console.error('[Play Page] Missing source parameter');
+          setVideo(null);
+          setIsLoading(false);
+          return;
+        }
+
+        // Load video details from API using separate source and id parameters
+        const response = await fetch(`/api/detail?source=${encodeURIComponent(sourceParam)}&id=${encodeURIComponent(videoId)}`);
+        console.log('[Play Page] API response status:', response.status);
+
         if (response.ok) {
           const data = await response.json();
+          console.log('[Play Page] API response data:', data);
+
+          if (!data.video) {
+            console.error('[Play Page] No video data in response');
+            setVideo(null);
+            setIsLoading(false);
+            return;
+          }
+
           setVideo(data.video);
 
-          // Check if favorited using first available source
-          if (data.video.sources && data.video.sources.length > 0) {
-            const firstSource = data.video.sources[0].sourceId;
-            const favorited = await isFavorited(firstSource, videoId);
+          // Use provided source or first available source
+          const targetSource = sourceParam || data.video.sources?.[0]?.sourceId;
+
+          // Check if favorited
+          if (targetSource) {
+            const favorited = await isFavorited(targetSource, videoId);
             setIsFavorite(favorited);
           }
 
@@ -82,12 +147,14 @@ export default function PlayPage() {
           let foundRecord: DbPlayRecord | null = null;
           let recordSourceId = "";
 
-          for (const source of data.video.sources || []) {
-            const key = `${source.sourceId}+${videoId}`;
-            if (allRecords[key]) {
-              foundRecord = allRecords[key];
-              recordSourceId = source.sourceId;
-              break;
+          if (data.video.sources && Array.isArray(data.video.sources)) {
+            for (const source of data.video.sources) {
+              const key = `${source.sourceId}+${videoId}`;
+              if (allRecords[key]) {
+                foundRecord = allRecords[key];
+                recordSourceId = source.sourceId;
+                break;
+              }
             }
           }
 
@@ -102,17 +169,30 @@ export default function PlayPage() {
               setCurrentTime(foundRecord.play_time);
               setDuration(foundRecord.total_time);
             }
+          } else if (sourceParam && data.video.sources) {
+            // If source is provided but no record, try to select that source
+            const sourceIndex = data.video.sources.findIndex(
+              (s: any) => s.sourceId === sourceParam
+            );
+            if (sourceIndex >= 0) {
+              setCurrentSourceIndex(sourceIndex);
+            }
           }
+        } else {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('[Play Page] API error:', errorData);
+          setVideo(null);
         }
       } catch (error) {
-        console.error("Failed to load video data:", error);
+        console.error('[Play Page] Failed to load video data:', error);
+        setVideo(null);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadVideoData();
-  }, [videoId]);
+  }, [videoId, sourceParam]);
 
   // Listen for favorites updates
   React.useEffect(() => {
@@ -129,6 +209,41 @@ export default function PlayPage() {
       window.removeEventListener("favoritesUpdated", handleFavoritesUpdate);
     };
   }, [video, videoId]);
+
+  // Keyboard shortcuts for episode navigation
+  React.useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Ignore if in input field
+      if (
+        (e.target as HTMLElement).tagName === "INPUT" ||
+        (e.target as HTMLElement).tagName === "TEXTAREA"
+      ) {
+        return;
+      }
+
+      // Alt + Left Arrow = Previous episode
+      if (e.altKey && e.key === "ArrowLeft") {
+        e.preventDefault();
+        if (currentEpisodeIndex > 0) {
+          handleEpisodeChange(currentEpisodeIndex - 1);
+        }
+      }
+
+      // Alt + Right Arrow = Next episode
+      if (e.altKey && e.key === "ArrowRight") {
+        e.preventDefault();
+        const totalEpisodes = currentSource?.episodes?.length || 0;
+        if (currentEpisodeIndex < totalEpisodes - 1) {
+          handleEpisodeChange(currentEpisodeIndex + 1);
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyPress);
+    return () => {
+      document.removeEventListener("keydown", handleKeyPress);
+    };
+  }, [currentEpisodeIndex, currentSource]);
 
   // Save play progress (debounced)
   const saveProgressTimeoutRef = React.useRef<NodeJS.Timeout | undefined>(undefined);
@@ -147,13 +262,15 @@ export default function PlayPage() {
 
     saveProgressTimeoutRef.current = setTimeout(async () => {
       try {
+        if (!video || !currentSource || !currentEpisode) return;
+
         const record: DbPlayRecord = {
           title: video.title,
           source_name: currentSource.sourceName,
           cover: video.cover || "",
           year: video.year || "",
           index: currentEpisodeIndex,
-          total_episodes: currentSource.episodes.length,
+          total_episodes: currentSource.episodes?.length || 0,
           play_time: Math.floor(time),
           total_time: Math.floor(videoDuration || duration || 0),
           save_time: Date.now(),
@@ -178,6 +295,13 @@ export default function PlayPage() {
     setCurrentTime(0);
   };
 
+  const handleNextEpisode = () => {
+    const totalEpisodes = currentSource?.episodes?.length || 0;
+    if (currentEpisodeIndex < totalEpisodes - 1) {
+      handleEpisodeChange(currentEpisodeIndex + 1);
+    }
+  };
+
   const handleBack = () => {
     router.back();
   };
@@ -197,7 +321,7 @@ export default function PlayPage() {
           source_name: currentSource.sourceName,
           cover: video.cover || "",
           year: video.year || "",
-          total_episodes: currentSource.episodes.length,
+          total_episodes: currentSource.episodes?.length || 0,
           save_time: Date.now(),
           search_title: video.title,
         };
@@ -213,9 +337,50 @@ export default function PlayPage() {
   if (isLoading) {
     return (
       <PageLayout>
-        <div className="space-y-6">
-          <Skeleton className="aspect-video w-full" />
-          <Skeleton className="h-20 w-full" />
+        <div className="flex flex-col gap-4 py-4 px-5 lg:px-[3rem] 2xl:px-20">
+          {/* Loading skeleton for player */}
+          <Skeleton className="aspect-video w-full rounded-xl" />
+          {/* Loading skeleton for info */}
+          <div className="flex gap-4">
+            <Skeleton className="w-32 h-44 rounded-lg" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-8 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-4 w-1/3" />
+            </div>
+          </div>
+          {/* Loading skeleton for episode selector */}
+          <Skeleton className="h-40 w-full" />
+        </div>
+      </PageLayout>
+    );
+  }
+
+  if (!video) {
+    return (
+      <PageLayout>
+        <div className="flex flex-col items-center justify-center py-20">
+          <p className="text-muted-foreground">未找到视频信息</p>
+          <Button variant="outline" className="mt-4" onClick={handleBack}>
+            返回
+          </Button>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  // Check if video has playable sources
+  const hasPlayableSources = video.sources && video.sources.length > 0 &&
+    video.sources.some((source) => source.episodes && source.episodes.length > 0);
+
+  if (!hasPlayableSources) {
+    return (
+      <PageLayout>
+        <div className="flex flex-col items-center justify-center py-20">
+          <p className="text-muted-foreground">该视频暂无播放源</p>
+          <Button variant="outline" className="mt-4" onClick={handleBack}>
+            返回
+          </Button>
         </div>
       </PageLayout>
     );
@@ -223,88 +388,85 @@ export default function PlayPage() {
 
   return (
     <PageLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={handleBack}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            返回
-          </Button>
-          <div className="flex items-center gap-3">
-            <div className="text-sm text-muted-foreground">
-              <Clock className="mr-1 inline h-4 w-4" />
-              {Math.floor(currentTime / 60)}:{Math.floor(currentTime % 60).toString().padStart(2, "0")}
+      <div className="flex flex-col gap-4 py-4 px-5 lg:px-[3rem] 2xl:px-20">
+        {/* Header - Episode Title */}
+        <div className="py-1">
+          <h1 className="text-2xl font-bold">
+            {video?.title || "未知标题"} &gt; 第{currentEpisodeIndex + 1}集
+          </h1>
+        </div>
+
+        {/* Video Player and Episode Selector */}
+        <div className="grid gap-4 lg:grid-cols-4">
+          {/* Player Section */}
+          <div className="lg:col-span-3">
+            <div className="bg-black rounded-xl overflow-hidden">
+              {currentEpisode && (
+                <VideoPlayer
+                  url={currentEpisode.url}
+                  poster={video?.cover}
+                  title={`${video?.title || ""} - ${currentEpisode.name}`}
+                  autoPlay={false}
+                  startTime={currentTime}
+                  onTimeUpdate={handleTimeUpdate}
+                  onEnded={handleNextEpisode}
+                  skipConfig={skipConfig}
+                />
+              )}
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleToggleFavorite}
-              className={isFavorite ? "text-red-500" : ""}
-            >
-              <Heart className={`h-5 w-5 ${isFavorite ? "fill-current" : ""}`} />
-            </Button>
+          </div>
+
+          {/* Episode Selector Section */}
+          <div className="lg:col-span-1">
+            {video?.sources && video.sources.length > 0 && (
+              <Card>
+                <CardContent className="p-4">
+                  <EpisodeSelector
+                    sources={video.sources}
+                    currentSourceIndex={currentSourceIndex}
+                    currentEpisodeIndex={currentEpisodeIndex}
+                    onSourceChange={handleSourceChange}
+                    onEpisodeChange={handleEpisodeChange}
+                  />
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
 
-        {/* Video Info */}
-        {video && (
-          <div className="flex gap-4">
-            {video.cover && (
-              <img
-                src={video.cover}
-                alt={video.title}
-                className="w-32 h-44 object-cover rounded-lg"
-              />
-            )}
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold mb-2">{video.title}</h1>
+        {/* Video Details */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Info Section */}
+          <div className="md:col-span-3 space-y-4">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">{video?.title}</h1>
               <p className="text-sm text-muted-foreground mb-1">
-                {video.year} · {video.type}
+                {video?.year} · {video?.type}
               </p>
-              {video.actors && video.actors.length > 0 && (
+              {video?.actors && video.actors.length > 0 && (
                 <p className="text-sm text-muted-foreground">
-                  主演: {video.actors.join(" / ")}
+                  主演: {video.actors?.join(" / ")}
                 </p>
               )}
-              {video.director && video.director.length > 0 && (
+              {video?.director && video.director.length > 0 && (
                 <p className="text-sm text-muted-foreground">
-                  导演: {video.director.join(" / ")}
+                  导演: {video.director?.join(" / ")}
                 </p>
               )}
             </div>
           </div>
-        )}
 
-        {/* Video Player */}
-        <Card className="overflow-hidden">
-          <CardContent className="p-0">
-            {currentEpisode && (
-              <VideoPlayer
-                url={currentEpisode.url}
-                poster={video?.cover}
-                title={currentEpisode.name}
-                autoPlay={false}
-                startTime={currentTime}
-                onTimeUpdate={handleTimeUpdate}
+          {/* Cover Section */}
+          <div className="md:col-span-1">
+            {video?.cover && (
+              <img
+                src={video.cover}
+                alt={video.title}
+                className="w-full rounded-lg shadow-lg"
               />
             )}
-          </CardContent>
-        </Card>
-
-        {/* Episode Selector */}
-        {video?.sources && video.sources.length > 0 && (
-          <Card>
-            <CardContent className="p-6">
-              <EpisodeSelector
-                sources={video.sources}
-                currentSourceIndex={currentSourceIndex}
-                currentEpisodeIndex={currentEpisodeIndex}
-                onSourceChange={handleSourceChange}
-                onEpisodeChange={handleEpisodeChange}
-              />
-            </CardContent>
-          </Card>
-        )}
+          </div>
+        </div>
       </div>
     </PageLayout>
   );

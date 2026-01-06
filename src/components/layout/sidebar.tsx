@@ -2,12 +2,15 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils/utils";
 import {
   Home,
   Search,
+  Film,
   Tv,
+  Cat,
+  Clover,
   Radio,
   Menu,
   X,
@@ -18,7 +21,10 @@ import { Button } from "@/components/ui/button";
 const navItems = [
   { icon: Home, label: "首页", href: "/home" },
   { icon: Search, label: "搜索", href: "/search" },
-  { icon: Tv, label: "豆瓣", href: "/douban" },
+  { icon: Film, label: "电影", href: "/douban?type=movie" },
+  { icon: Tv, label: "剧集", href: "/douban?type=tv" },
+  { icon: Cat, label: "动漫", href: "/douban?type=anime" },
+  { icon: Clover, label: "综艺", href: "/douban?type=show" },
   { icon: Radio, label: "直播", href: "/live" },
 ];
 
@@ -28,11 +34,36 @@ interface SidebarProps {
 
 export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [collapsed, setCollapsed] = React.useState(false);
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
   const handleNavClick = () => {
     setMobileOpen(false);
+  };
+
+  // Check if a nav item is active based on pathname and query params
+  const isNavItemActive = (href: string) => {
+    const [hrefPath, hrefQuery] = href.split("?");
+
+    // Check if paths match
+    if (pathname !== hrefPath) {
+      return false;
+    }
+
+    // If href has query params, check if they match
+    if (hrefQuery) {
+      const hrefParams = new URLSearchParams(hrefQuery);
+      for (const [key, value] of hrefParams.entries()) {
+        if (searchParams.get(key) !== value) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    // For paths without query params, exact match is enough
+    return true;
   };
 
   return (
@@ -83,7 +114,7 @@ export function Sidebar({ className }: SidebarProps) {
         <nav className="p-2 space-y-1 overflow-y-auto h-[calc(100vh-4rem)]">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
+            const isActive = isNavItemActive(item.href);
 
             return (
               <Link

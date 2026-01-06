@@ -7,6 +7,31 @@ export interface DoubanResponse {
   count: number;
 }
 
+export interface DoubanResult {
+  code: number;
+  message: string;
+  list: DoubanItem[];
+}
+
+interface DoubanCategoriesParams {
+  kind: "tv" | "movie";
+  category: string;
+  type: string;
+  limit?: number;
+  start?: number;
+}
+
+interface DoubanRecommendsParams {
+  kind: "tv" | "movie";
+  format?: string;
+  category?: string;
+  region?: string;
+  year?: string;
+  sort?: string;
+  limit?: number;
+  start?: number;
+}
+
 // Douban API 客户端
 export class DoubanClient {
   private proxyBase: string;
@@ -108,3 +133,127 @@ export function generateMockDoubanData(count: number): DoubanItem[] {
     poster: `https://picsum.photos/200/300?random=${i}`,
   }));
 }
+
+/**
+ * Get Douban categories data
+ */
+export async function getDoubanCategories(
+  params: DoubanCategoriesParams
+): Promise<DoubanResult> {
+  const { kind, category, type, limit = 20, start = 0 } = params;
+
+  try {
+    const response = await fetch(
+      `/api/douban/categories?kind=${kind}&category=${encodeURIComponent(category)}&type=${encodeURIComponent(type)}&limit=${limit}&start=${start}`
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Failed to fetch Douban categories:", error);
+    return {
+      code: 500,
+      message: "获取失败",
+      list: [],
+    };
+  }
+}
+
+/**
+ * Get Douban recommends data with filters
+ */
+export async function getDoubanRecommends(
+  params: DoubanRecommendsParams
+): Promise<DoubanResult> {
+  const {
+    kind,
+    format = "",
+    category = "",
+    region = "",
+    year = "",
+    sort = "",
+    limit = 20,
+    start = 0,
+  } = params;
+
+  try {
+    const queryParams = new URLSearchParams();
+    queryParams.append("kind", kind);
+    queryParams.append("limit", limit.toString());
+    queryParams.append("start", start.toString());
+    if (category) queryParams.append("category", category);
+    if (format) queryParams.append("format", format);
+    if (region) queryParams.append("region", region);
+    if (year) queryParams.append("year", year);
+    if (sort) queryParams.append("sort", sort);
+
+    const response = await fetch(`/api/douban/recommends?${queryParams.toString()}`);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Failed to fetch Douban recommends:", error);
+    return {
+      code: 500,
+      message: "获取失败",
+      list: [],
+    };
+  }
+}
+
+/**
+ * Bangumi calendar data interface
+ */
+export interface BangumiCalendarData {
+  weekday: {
+    id: number;
+    en: string;
+    cn: string;
+    ja: string;
+  };
+  items: {
+    id: number;
+    name: string;
+    name_cn: string;
+    rating?: {
+      score: number;
+    };
+    air_date: string;
+    images?: {
+      large: string;
+      common: string;
+      medium: string;
+      small: string;
+      grid: string;
+    };
+  }[];
+}
+
+/**
+ * Get Bangumi calendar data
+ */
+export async function GetBangumiCalendarData(): Promise<BangumiCalendarData[]> {
+  try {
+    const response = await fetch("https://api.bgm.tv/calendar");
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    const data = await response.json();
+    const filteredData = data.map((item: BangumiCalendarData) => ({
+      ...item,
+      items: item.items.filter((bangumiItem) => bangumiItem.images),
+    }));
+
+    return filteredData;
+  } catch (error) {
+    console.error("Failed to fetch Bangumi calendar:", error);
+    return [];
+  }
+}
+

@@ -181,7 +181,6 @@ function HomePageClient() {
                         year={item.year}
                         episodes={item.total_episodes}
                         source_name={item.source_name}
-                        currentEpisode={item.currentEpisode}
                         query={item.search_title}
                         from="favorite"
                         type={item.total_episodes > 1 ? "tv" : ""}

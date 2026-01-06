@@ -1,26 +1,26 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Play, Heart } from "lucide-react";
+import { processImageUrl } from "@/lib/utils/utils";
 
 interface VideoCardProps {
   id?: string;
   source?: string;
   title: string;
-  query?: string;
   poster: string;
   episodes?: number;
-  source_name?: string;
   progress?: number;
   year?: string;
   from: "playrecord" | "favorite" | "search" | "douban";
   currentEpisode?: number;
-  douban_id?: number;
   rate?: string;
+  source_name?: string;
+  query?: string;
   type?: string;
   isBangumi?: boolean;
+  douban_id?: number;
 }
 
 export function VideoCard({
@@ -28,25 +28,33 @@ export function VideoCard({
   source,
   title,
   poster,
+  episodes,
   progress = 0,
   year,
   from,
   currentEpisode,
-  douban_id,
   rate,
-  type = "",
-  isBangumi = false,
 }: VideoCardProps) {
   const router = useRouter();
   const [imageError, setImageError] = React.useState(false);
 
   const handleClick = () => {
-    if (from === "douban" && douban_id) {
-      router.push(`/douban?id=${douban_id}${type ? `&type=${type}` : ""}`);
-    } else if (from === "playrecord" && id && source) {
-      router.push(`/play/${id}?source=${source}`);
-    } else if (from === "favorite" && id && source) {
-      router.push(`/play/${id}?source=${source}`);
+    const actualSource = source || "";
+    const actualId = id || "";
+    const actualTitle = title || "";
+    const actualYear = year || "";
+
+    // For content with source + id, go directly to detail page
+    if (actualSource && actualId) {
+      router.push(`/play/${actualId}?source=${actualSource}`);
+    }
+    // For Douban content without source, search first
+    else if (from === "douban" && actualTitle) {
+      const searchType = episodes === 1 ? "movie" : episodes && episodes > 1 ? "tv" : "";
+      const url = `/play?title=${encodeURIComponent(actualTitle.trim())}${
+        actualYear ? `&year=${actualYear}` : ""
+      }${searchType ? `&stype=${searchType}` : ""}`;
+      router.push(url);
     }
   };
 
@@ -58,7 +66,7 @@ export function VideoCard({
       <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-muted">
         {!imageError && poster ? (
           <img
-            src={poster}
+            src={processImageUrl(poster)}
             alt={title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
             onError={() => setImageError(true)}

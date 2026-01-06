@@ -75,41 +75,24 @@ export default function SearchPage() {
     setResults([]); // Clear previous results
 
     try {
-      // Use SSE for streaming search results
+      // Use normal JSON fetch instead of SSE
       const response = await fetch(
         `/api/search?keyword=${encodeURIComponent(searchKeyword)}`
       );
 
       if (!response.ok) throw new Error("Search failed");
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
+      const data = await response.json();
 
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = JSON.parse(line.slice(6));
-              if (data.videos) {
-                setResults(data.videos);
-              }
-            }
-          }
-        }
+      if (data.videos && Array.isArray(data.videos)) {
+        setResults(data.videos);
       }
 
       // Save to search history (automatically triggers CustomEvent update)
       await addSearchHistory(searchKeyword);
     } catch (error) {
       console.error("Search error:", error);
+      setResults([]);
     } finally {
       setIsSearching(false);
     }
@@ -233,22 +216,26 @@ export default function SearchPage() {
               找到 {results.length} 个结果
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-              {results.map((video) => (
-                <div key={`${video.source}-${video.id}`}>
-                  <VideoCard
-                    id={video.id}
-                    source={video.source}
-                    title={video.title}
-                    poster={video.cover}
-                    year={video.year}
-                    episodes={video.episodes?.length || 0}
-                    source_name={video.source_name}
-                    from="search"
-                    query={keyword}
-                    type={video.type}
-                  />
-                </div>
-              ))}
+              {results.map((video) => {
+                // Parse combined id format: "sourceId-vodId"
+                const idParts = video.id.split("-");
+                const source = idParts[0];
+                const vodId = idParts.slice(1).join("-"); // Handle ids with multiple dashes
+
+                return (
+                  <div key={video.id}>
+                    <VideoCard
+                      id={vodId}
+                      source={source}
+                      title={video.title}
+                      poster={video.cover || ""}
+                      year={video.year}
+                      episodes={video.sources?.[0]?.episodes?.length || 0}
+                      from="search"
+                    />
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

@@ -20,7 +20,7 @@ async function getSearchManager(username?: string): Promise<SearchManager> {
   return manager;
 }
 
-// GET /api/search - 流式搜索
+// GET /api/search - 搜索
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const keyword = searchParams.get("keyword") || "";
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
   const year = searchParams.get("year") || undefined;
 
   if (!keyword) {
-    return new Response("Keyword is required", { status: 400 });
+    return Response.json({ error: "Keyword is required" }, { status: 400 });
   }
 
   // Get username from auth
@@ -37,38 +37,24 @@ export async function GET(request: NextRequest) {
 
   const manager = await getSearchManager(username);
 
-  // 创建 SSE 流
-  const encoder = new TextEncoder();
-  const stream = new ReadableStream({
-    async start(controller) {
-      try {
-        const results = await manager.searchAll({
-          keyword,
-          type,
-          year,
-        });
+  try {
+    const results = await manager.searchAll({
+      keyword,
+      type,
+      year,
+    });
 
-        // 发送结果
-        const data = JSON.stringify(results);
-        controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-
-        controller.close();
-      } catch (error) {
-        console.error("Search error:", error);
-        const errorData = JSON.stringify({
-          error: error instanceof Error ? error.message : "Search failed",
-        });
-        controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
-        controller.close();
-      }
-    },
-  });
-
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      "Connection": "keep-alive",
-    },
-  });
+    return Response.json(results);
+  } catch (error) {
+    console.error("Search error:", error);
+    return Response.json(
+      {
+        error: error instanceof Error ? error.message : "Search failed",
+        videos: [],
+        sources: {},
+        total: 0,
+      },
+      { status: 500 }
+    );
+  }
 }

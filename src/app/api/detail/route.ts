@@ -6,26 +6,24 @@ import { getAuthInfoFromCookie } from "@/lib/auth";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// GET /api/detail?id=xxx - 获取视频详情
+// GET /api/detail?source=xxx&id=xxx - 获取视频详情
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const videoId = searchParams.get("id");
+  const source = searchParams.get("source");
+  const id = searchParams.get("id");
 
-  if (!videoId) {
-    return Response.json({ error: "Video ID is required" }, { status: 400 });
+  if (!source || !id) {
+    return Response.json({ error: "Source and ID are required" }, { status: 400 });
   }
 
   try {
-    // 解析 videoId 获取源ID
-    const sourceId = videoId.split("-")[0];
-
     // Get username from auth
     const authInfo = getAuthInfoFromCookie(request);
     const username = authInfo?.username;
 
     // 查找对应的源配置
     const sources = await getAvailableApiSites(username);
-    const sourceConfig = sources.find((s: any) => s.key === sourceId);
+    const sourceConfig = sources.find((s: any) => s.key === source);
     if (!sourceConfig) {
       return Response.json({ error: "Source not found or disabled" }, { status: 404 });
     }
@@ -37,7 +35,7 @@ export async function GET(request: NextRequest) {
       sourceConfig.api
     );
 
-    const video = await client.getDetail(videoId);
+    const video = await client.getDetail(id);
 
     if (!video) {
       return Response.json({ error: "Video not found" }, { status: 404 });
