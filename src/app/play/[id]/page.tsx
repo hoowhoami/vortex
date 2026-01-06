@@ -48,6 +48,9 @@ export default function PlayPage() {
   const searchParams = useSearchParams();
   const videoId = params.id as string;
   const sourceParam = searchParams.get("source") || "";
+  const searchTitle = searchParams.get("stitle") || searchParams.get("title") || "";
+  const searchType = searchParams.get("stype") || "";
+  const searchYear = searchParams.get("year") || "";
 
   const [video, setVideo] = React.useState<Video | null>(null);
   const [currentSourceIndex, setCurrentSourceIndex] = React.useState(0);
@@ -56,6 +59,11 @@ export default function PlayPage() {
   const [duration, setDuration] = React.useState(0);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isFavorite, setIsFavorite] = React.useState(false);
+
+  // Available sources for switching
+  const [availableSources, setAvailableSources] = React.useState<Video[]>([]);
+  const [sourceSearchLoading, setSourceSearchLoading] = React.useState(false);
+  const [sourceSearchError, setSourceSearchError] = React.useState<string | null>(null);
 
   // Skip intro/outro configuration
   const [skipConfig, setSkipConfig] = React.useState<{
@@ -196,6 +204,59 @@ export default function PlayPage() {
     loadVideoData();
   }, [videoId, sourceParam]);
 
+  // Load all available sources for source switching
+  React.useEffect(() => {
+    const loadAvailableSources = async () => {
+      if (!searchTitle) {
+        console.log('[Play Page] No search title provided, skipping source search');
+        return;
+      }
+
+      setSourceSearchLoading(true);
+      setSourceSearchError(null);
+
+      try {
+        console.log('[Play Page] Searching for available sources with title:', searchTitle);
+
+        const response = await fetch(
+          `/api/search?keyword=${encodeURIComponent(searchTitle)}${searchType ? `&type=${searchType}` : ""}${searchYear ? `&year=${searchYear}` : ""}`
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to search for sources');
+        }
+
+        const data = await response.json();
+        console.log('[Play Page] Search results:', data);
+
+        if (data.videos && Array.isArray(data.videos)) {
+          // Filter videos that match the current video title and year
+          const currentVideoTitle = video?.title || searchParams.get("title") || "";
+          const currentVideoYear = video?.year || searchYear || "";
+
+          const matchingSources = data.videos.filter((v: Video) => {
+            const titleMatch = v.title.replaceAll(' ', '').toLowerCase() === currentVideoTitle.replaceAll(' ', '').toLowerCase();
+            const yearMatch = !currentVideoYear || v.year === currentVideoYear;
+            return titleMatch && yearMatch;
+          });
+
+          console.log('[Play Page] Found matching sources:', matchingSources.length);
+          setAvailableSources(matchingSources);
+        }
+      } catch (error) {
+        console.error('[Play Page] Failed to load available sources:', error);
+        setSourceSearchError(error instanceof Error ? error.message : 'Failed to search for sources');
+      } finally {
+        setSourceSearchLoading(false);
+      }
+    };
+
+    // Only load available sources after video data is loaded and search title is available
+    if (video && searchTitle) {
+      loadAvailableSources();
+    }
+  }, [video, searchTitle, searchType, searchYear]);
+
   // Listen for favorites updates
   React.useEffect(() => {
     const handleFavoritesUpdate = async () => {
@@ -290,6 +351,38 @@ export default function PlayPage() {
     setCurrentSourceIndex(index);
     setCurrentEpisodeIndex(0);
     setCurrentTime(0);
+  };
+
+  // Handle switching to a different API source
+  const handleApiSourceSwitch = async (newSource: string, newId: string) => {
+    setIsLoading(true);
+
+    try {
+      console.log('[Play Page] Switching to source:', newSource, 'id:', newId);
+
+      const response = await fetch(`/api/detail?source=${encodeURIComponent(newSource)}&id=${encodeURIComponent(newId)}`);
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.video) {
+          setVideo(data.video);
+          setCurrentSourceIndex(0);
+          setCurrentEpisodeIndex(0);
+          setCurrentTime(0);
+
+          // Update URL
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.set('source', newSource);
+          window.history.replaceState({}, '', newUrl.toString());
+        }
+      } else {
+        console.error('[Play Page] Failed to load video from new source');
+      }
+    } catch (error) {
+      console.error('[Play Page] Error switching source:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleEpisodeChange = (index: number) => {
@@ -428,7 +521,7 @@ export default function PlayPage() {
 
             {/* Episode Selector */}
             <div className="md:col-span-1 h-[300px] lg:h-full md:overflow-hidden">
-              {video?.sources && video.sources.length > 0 && (
+              {video?.sources && Array.isArray(video.sources) && video.sources.length > 0 && (
                 <Card className="h-full">
                   <CardContent className="p-4 h-full overflow-y-auto">
                     <EpisodeSelector
@@ -437,6 +530,12 @@ export default function PlayPage() {
                       currentEpisodeIndex={currentEpisodeIndex}
                       onSourceChange={handleSourceChange}
                       onEpisodeChange={handleEpisodeChange}
+                      availableSources={availableSources}
+                      currentApiSource={sourceParam}
+                      currentApiId={videoId}
+                      onApiSourceSwitch={handleApiSourceSwitch}
+                      sourceSearchLoading={sourceSearchLoading}
+                      sourceSearchError={sourceSearchError}
                     />
                   </CardContent>
                 </Card>

@@ -34,6 +34,7 @@ export function VideoCard({
   from,
   currentEpisode,
   rate,
+  query,
 }: VideoCardProps) {
   const router = useRouter();
   const [imageError, setImageError] = React.useState(false);
@@ -44,9 +45,12 @@ export function VideoCard({
     const actualTitle = title || "";
     const actualYear = year || "";
 
-    // For content with source + id, go directly to detail page
+    // For content with source + id, go directly to detail page with search params
     if (actualSource && actualId) {
-      router.push(`/play/${actualId}?source=${actualSource}`);
+      const searchType = episodes === 1 ? "movie" : episodes && episodes > 1 ? "tv" : "";
+      const searchTitle = query || actualTitle; // Use query if available, otherwise use title
+      const url = `/play/${actualId}?source=${actualSource}&title=${encodeURIComponent(actualTitle.trim())}${actualYear ? `&year=${actualYear}` : ""}${searchType ? `&stype=${searchType}` : ""}${query ? `&stitle=${encodeURIComponent(searchTitle.trim())}` : ""}`;
+      router.push(url);
     }
     // For Douban content without source, search first
     else if (from === "douban" && actualTitle) {
