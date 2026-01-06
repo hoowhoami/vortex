@@ -431,47 +431,49 @@ export function LiveManagement({ config, onUpdate }: LiveManagementProps) {
       {/* Live sources table */}
       <Card>
         <CardContent className="pt-6">
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-8"></TableHead>
-                  <TableHead>名称</TableHead>
-                  <TableHead>标识</TableHead>
-                  <TableHead>M3U 地址</TableHead>
-                  <TableHead>EPG 地址</TableHead>
-                  <TableHead>频道数</TableHead>
-                  <TableHead>状态</TableHead>
-                  <TableHead className="text-right">操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-                modifiers={[restrictToVerticalAxis, restrictToParentElement]}
-              >
-                <SortableContext
-                  items={liveSources.map((s) => s.key)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <TableBody>
-                    {liveSources.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={8} className="text-center text-muted-foreground">
-                          暂无直播源，请添加直播源
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      liveSources.map((source) => (
-                        <DraggableRow key={source.key} source={source} />
-                      ))
-                    )}
-                  </TableBody>
-                </SortableContext>
-              </DndContext>
-            </Table>
-          </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+            modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+          >
+            <div className="rounded-md border">
+              <div className="relative w-full overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-8"></TableHead>
+                      <TableHead className="min-w-[120px]">名称</TableHead>
+                      <TableHead className="min-w-[100px]">标识</TableHead>
+                      <TableHead className="min-w-[200px]">M3U 地址</TableHead>
+                      <TableHead className="min-w-[200px]">EPG 地址</TableHead>
+                      <TableHead className="min-w-[100px]">频道数</TableHead>
+                      <TableHead className="min-w-[100px]">状态</TableHead>
+                      <TableHead className="text-right min-w-[120px]">操作</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <SortableContext
+                    items={liveSources.map((s) => s.key)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <TableBody>
+                      {liveSources.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center text-muted-foreground">
+                            暂无直播源，请添加直播源
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        liveSources.map((source) => (
+                          <DraggableRow key={source.key} source={source} />
+                        ))
+                      )}
+                    </TableBody>
+                  </SortableContext>
+                </Table>
+              </div>
+            </div>
+          </DndContext>
         </CardContent>
       </Card>
 

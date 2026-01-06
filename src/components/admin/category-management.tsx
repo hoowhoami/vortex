@@ -329,48 +329,50 @@ export function CategoryManagement({ config, onUpdate }: CategoryManagementProps
       {/* Categories table */}
       <Card>
         <CardContent className="pt-6">
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-8"></TableHead>
-                  <TableHead>分类名称</TableHead>
-                  <TableHead>类型</TableHead>
-                  <TableHead>搜索关键词</TableHead>
-                  <TableHead>状态</TableHead>
-                  <TableHead className="text-right">操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-                modifiers={[restrictToVerticalAxis, restrictToParentElement]}
-              >
-                <SortableContext
-                  items={categories.map((c) => `${c.query}:${c.type}`)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <TableBody>
-                    {categories.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground">
-                          暂无自定义分类，请添加分类
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      categories.map((category) => (
-                        <DraggableRow
-                          key={`${category.query}:${category.type}`}
-                          category={category}
-                        />
-                      ))
-                    )}
-                  </TableBody>
-                </SortableContext>
-              </DndContext>
-            </Table>
-          </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+            modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+          >
+            <div className="rounded-md border">
+              <div className="relative w-full overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-8"></TableHead>
+                      <TableHead className="min-w-[120px]">分类名称</TableHead>
+                      <TableHead className="min-w-[100px]">类型</TableHead>
+                      <TableHead className="min-w-[150px]">搜索关键词</TableHead>
+                      <TableHead className="min-w-[100px]">状态</TableHead>
+                      <TableHead className="text-right min-w-[100px]">操作</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <SortableContext
+                    items={categories.map((c) => `${c.query}:${c.type}`)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <TableBody>
+                      {categories.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center text-muted-foreground">
+                            暂无自定义分类，请添加分类
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        categories.map((category) => (
+                          <DraggableRow
+                            key={`${category.query}:${category.type}`}
+                            category={category}
+                          />
+                        ))
+                      )}
+                    </TableBody>
+                  </SortableContext>
+                </Table>
+              </div>
+            </div>
+          </DndContext>
         </CardContent>
       </Card>
 

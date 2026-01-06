@@ -611,53 +611,55 @@ export function SourceManagement({ config, onUpdate }: SourceManagementProps) {
       {/* Sources table */}
       <Card>
         <CardContent className="pt-6">
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-8"></TableHead>
-                  <TableHead className="w-12">
-                    <Checkbox
-                      checked={selectAll}
-                      onCheckedChange={handleSelectAll}
-                    />
-                  </TableHead>
-                  <TableHead>名称</TableHead>
-                  <TableHead>标识</TableHead>
-                  <TableHead>API 地址</TableHead>
-                  <TableHead>详情页</TableHead>
-                  <TableHead>状态</TableHead>
-                  <TableHead>有效性</TableHead>
-                  <TableHead className="text-right">操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-                modifiers={[restrictToVerticalAxis, restrictToParentElement]}
-              >
-                <SortableContext
-                  items={sources.map((s) => s.key)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <TableBody>
-                    {sources.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={9} className="text-center text-muted-foreground">
-                          暂无视频源，请添加视频源
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      sources.map((source) => (
-                        <DraggableRow key={source.key} source={source} />
-                      ))
-                    )}
-                  </TableBody>
-                </SortableContext>
-              </DndContext>
-            </Table>
-          </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+            modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+          >
+            <div className="rounded-md border">
+              <div className="relative w-full overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-8"></TableHead>
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={selectAll}
+                          onCheckedChange={handleSelectAll}
+                        />
+                      </TableHead>
+                      <TableHead className="min-w-[120px]">名称</TableHead>
+                      <TableHead className="min-w-[100px]">标识</TableHead>
+                      <TableHead className="min-w-[200px]">API 地址</TableHead>
+                      <TableHead className="min-w-[200px]">详情页</TableHead>
+                      <TableHead className="min-w-[100px]">状态</TableHead>
+                      <TableHead className="min-w-[120px]">有效性</TableHead>
+                      <TableHead className="text-right min-w-[140px]">操作</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <SortableContext
+                    items={sources.map((s) => s.key)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <TableBody>
+                      {sources.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={9} className="text-center text-muted-foreground">
+                            暂无视频源，请添加视频源
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        sources.map((source) => (
+                          <DraggableRow key={source.key} source={source} />
+                        ))
+                      )}
+                    </TableBody>
+                  </SortableContext>
+                </Table>
+              </div>
+            </div>
+          </DndContext>
         </CardContent>
       </Card>
 

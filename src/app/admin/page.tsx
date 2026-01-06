@@ -23,21 +23,21 @@ import { LiveManagement } from '@/components/admin/live-management';
 import { ConfigFile } from '@/components/admin/config-file';
 import DataMigration from '@/components/admin-data-migration';
 
-// Storage type check
-const STORAGE_TYPE = (() => {
-  if (typeof window === 'undefined') return 'localstorage';
-  const raw =
-    (window as any).RUNTIME_CONFIG?.STORAGE_TYPE ||
-    process.env.NEXT_PUBLIC_STORAGE_TYPE ||
-    'localstorage';
-  return raw as 'localstorage' | 'redis' | 'upstash' | 'kvrocks';
-})();
-
 function AdminPageClient() {
   const [config, setConfig] = useState<AdminConfig | null>(null);
   const [role, setRole] = useState<'owner' | 'admin' | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [storageType, setStorageType] = useState<'localstorage' | 'redis' | 'upstash' | 'kvrocks'>('localstorage');
+
+  // Initialize storage type on client side only
+  useEffect(() => {
+    const raw =
+      (window as any).RUNTIME_CONFIG?.STORAGE_TYPE ||
+      process.env.NEXT_PUBLIC_STORAGE_TYPE ||
+      'localstorage';
+    setStorageType(raw as 'localstorage' | 'redis' | 'upstash' | 'kvrocks');
+  }, []);
 
   const fetchConfig = async () => {
     try {
@@ -58,6 +58,44 @@ function AdminPageClient() {
   useEffect(() => {
     fetchConfig();
   }, []);
+
+  // Check storage type - block access if using localstorage
+  if (storageType === 'localstorage') {
+    return (
+      <PageLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Card className="max-w-2xl border-yellow-200 dark:border-yellow-800">
+            <CardContent className="pt-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <AlertTriangle className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
+                <h2 className="text-2xl font-bold text-yellow-800 dark:text-yellow-300">
+                  管理面板不可用
+                </h2>
+              </div>
+              <div className="space-y-3 text-yellow-700 dark:text-yellow-400">
+                <p>
+                  LocalStorage 模式不支持管理面板功能。管理面板需要数据库后端来存储配置和用户数据。
+                </p>
+                <p className="font-medium">请配置数据库后端：</p>
+                <ul className="list-disc list-inside space-y-1 ml-4">
+                  <li>Redis (本地开发推荐)</li>
+                  <li>Upstash (云端 Redis，有免费套餐)</li>
+                  <li>Kvrocks (Redis 兼容)</li>
+                </ul>
+                <div className="mt-4 pt-4 border-t border-yellow-200 dark:border-yellow-700">
+                  <p className="text-sm">
+                    修改 <code className="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded">.env.local</code> 文件中的{' '}
+                    <code className="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded">NEXT_PUBLIC_STORAGE_TYPE</code> 为{' '}
+                    <code className="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded">redis</code> 或其他数据库类型。
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </PageLayout>
+    );
+  }
 
   if (loading) {
     return (
@@ -168,44 +206,6 @@ function AdminPageClient() {
 }
 
 export default function AdminPage() {
-  // Check storage type - block access if using localstorage
-  if (STORAGE_TYPE === 'localstorage') {
-    return (
-      <PageLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Card className="max-w-2xl border-yellow-200 dark:border-yellow-800">
-            <CardContent className="pt-6">
-              <div className="flex items-center space-x-3 mb-4">
-                <AlertTriangle className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
-                <h2 className="text-2xl font-bold text-yellow-800 dark:text-yellow-300">
-                  管理面板不可用
-                </h2>
-              </div>
-              <div className="space-y-3 text-yellow-700 dark:text-yellow-400">
-                <p>
-                  LocalStorage 模式不支持管理面板功能。管理面板需要数据库后端来存储配置和用户数据。
-                </p>
-                <p className="font-medium">请配置数据库后端：</p>
-                <ul className="list-disc list-inside space-y-1 ml-4">
-                  <li>Redis (本地开发推荐)</li>
-                  <li>Upstash (云端 Redis，有免费套餐)</li>
-                  <li>Kvrocks (Redis 兼容)</li>
-                </ul>
-                <div className="mt-4 pt-4 border-t border-yellow-200 dark:border-yellow-700">
-                  <p className="text-sm">
-                    修改 <code className="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded">.env.local</code> 文件中的{' '}
-                    <code className="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded">NEXT_PUBLIC_STORAGE_TYPE</code> 为{' '}
-                    <code className="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded">redis</code> 或其他数据库类型。
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </PageLayout>
-    );
-  }
-
   return (
     <Suspense fallback={
       <PageLayout>

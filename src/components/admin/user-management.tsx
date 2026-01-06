@@ -183,18 +183,20 @@ export function UserManagement({ config, onUpdate }: UserManagementProps) {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>用户名</TableHead>
-                <TableHead>角色</TableHead>
-                <TableHead>状态</TableHead>
-                <TableHead>标签</TableHead>
-                <TableHead className="text-right">操作</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {config.UserConfig.Users.map((user) => (
+          <div className="rounded-md border">
+            <div className="relative w-full overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[120px]">用户名</TableHead>
+                    <TableHead className="min-w-[100px]">角色</TableHead>
+                    <TableHead className="min-w-[100px]">状态</TableHead>
+                    <TableHead className="min-w-[150px]">标签</TableHead>
+                    <TableHead className="text-right min-w-[140px]">操作</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {config.UserConfig.Users.map((user) => (
                 <TableRow key={user.username}>
                   <TableCell className="font-medium">{user.username}</TableCell>
                   <TableCell>
@@ -292,6 +294,8 @@ export function UserManagement({ config, onUpdate }: UserManagementProps) {
               ))}
             </TableBody>
           </Table>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
