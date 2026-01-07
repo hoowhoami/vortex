@@ -1,0 +1,8 @@
+# Dart 编译选项
+analyzer:
+  errors:
+    # 忽略 Isar 生成代码中的 JavaScript 整数溢出警告
+    compile_time_constant_create_from_string_int_literal: ignore
+  exclude:
+    - '**/*.g.dart'
+    - '**/*.freezed.dart'
