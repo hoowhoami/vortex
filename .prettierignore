@@ -1,0 +1,10 @@
+node_modules
+dist
+dist-ssr
+*.local
+.git
+.vscode
+.idea
+package-lock.json
+pnpm-lock.yaml
+yarn.lock

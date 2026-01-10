@@ -1,0 +1,175 @@
+@import 'tailwindcss';
+
+/* 浅色主题 */
+@theme {
+  /* 基础颜色 */
+  --color-background: #ffffff;
+  --color-foreground: #0f172a;
+
+  /* 卡片 */
+  --color-card: #ffffff;
+  --color-card-foreground: #0f172a;
+
+  /* 弹出框 */
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0f172a;
+
+  /* 主色调 */
+  --color-primary: #0f172a;
+  --color-primary-foreground: #f8fafc;
+
+  /* 次要色调 */
+  --color-secondary: #f1f5f9;
+  --color-secondary-foreground: #0f172a;
+
+  /* 静音色调 */
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+
+  /* 强调色调 */
+  --color-accent: #f1f5f9;
+  --color-accent-foreground: #0f172a;
+
+  /* 破坏性操作 */
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #f8fafc;
+
+  /* 边框 */
+  --color-border: #e2e8f0;
+  --color-input: #e2e8f0;
+
+  /* 焦点环 */
+  --color-ring: #0f172a;
+
+  /* 图表颜色 */
+  --color-chart-1: #3b82f6;
+  --color-chart-2: #8b5cf6;
+  --color-chart-3: #ec4899;
+  --color-chart-4: #f59e0b;
+  --color-chart-5: #10b981;
+
+  /* 圆角 */
+  --radius: 0.5rem;
+}
+
+/* 深色主题 - 跟随系统偏好 */
+@media (prefers-color-scheme: dark) {
+  @theme {
+    /* 基础颜色 */
+    --color-background: #0f172a;
+    --color-foreground: #f8fafc;
+
+    /* 卡片 */
+    --color-card: #1e293b;
+    --color-card-foreground: #f8fafc;
+
+    /* 弹出框 */
+    --color-popover: #1e293b;
+    --color-popover-foreground: #f8fafc;
+
+    /* 主色调 */
+    --color-primary: #f8fafc;
+    --color-primary-foreground: #0f172a;
+
+    /* 次要色调 */
+    --color-secondary: #334155;
+    --color-secondary-foreground: #f8fafc;
+
+    /* 静音色调 */
+    --color-muted: #334155;
+    --color-muted-foreground: #94a3b8;
+
+    /* 强调色调 */
+    --color-accent: #334155;
+    --color-accent-foreground: #f8fafc;
+
+    /* 破坏性操作 */
+    --color-destructive: #dc2626;
+    --color-destructive-foreground: #f8fafc;
+
+    /* 边框 */
+    --color-border: #334155;
+    --color-input: #334155;
+
+    /* 焦点环 */
+    --color-ring: #cbd5e1;
+
+    /* 图表颜色 */
+    --color-chart-1: #60a5fa;
+    --color-chart-2: #a78bfa;
+    --color-chart-3: #f472b6;
+    --color-chart-4: #fbbf24;
+    --color-chart-5: #34d399;
+  }
+}
+
+/* 浅色主题 - 手动切换（覆盖系统偏好） */
+.light {
+  --color-background: #ffffff;
+  --color-foreground: #0f172a;
+  --color-card: #ffffff;
+  --color-card-foreground: #0f172a;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0f172a;
+  --color-primary: #0f172a;
+  --color-primary-foreground: #f8fafc;
+  --color-secondary: #f1f5f9;
+  --color-secondary-foreground: #0f172a;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+  --color-accent: #f1f5f9;
+  --color-accent-foreground: #0f172a;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #f8fafc;
+  --color-border: #e2e8f0;
+  --color-input: #e2e8f0;
+  --color-ring: #0f172a;
+  --color-chart-1: #3b82f6;
+  --color-chart-2: #8b5cf6;
+  --color-chart-3: #ec4899;
+  --color-chart-4: #f59e0b;
+  --color-chart-5: #10b981;
+}
+
+/* 深色主题 - 手动切换 */
+.dark {
+  --color-background: #0f172a;
+  --color-foreground: #f8fafc;
+  --color-card: #1e293b;
+  --color-card-foreground: #f8fafc;
+  --color-popover: #1e293b;
+  --color-popover-foreground: #f8fafc;
+  --color-primary: #f8fafc;
+  --color-primary-foreground: #0f172a;
+  --color-secondary: #334155;
+  --color-secondary-foreground: #f8fafc;
+  --color-muted: #334155;
+  --color-muted-foreground: #94a3b8;
+  --color-accent: #334155;
+  --color-accent-foreground: #f8fafc;
+  --color-destructive: #dc2626;
+  --color-destructive-foreground: #f8fafc;
+  --color-border: #334155;
+  --color-input: #334155;
+  --color-ring: #cbd5e1;
+  --color-chart-1: #60a5fa;
+  --color-chart-2: #a78bfa;
+  --color-chart-3: #f472b6;
+  --color-chart-4: #fbbf24;
+  --color-chart-5: #34d399;
+}
+
+/* 基础样式 */
+* {
+  border-color: var(--color-border);
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
