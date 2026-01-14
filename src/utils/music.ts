@@ -1,12 +1,14 @@
 import { Song } from '@/types';
+import { getProxyUrl } from './proxy';
 
-export const getCover = (coverUrl: string, size: number = 200, https = true) => {
+export const getCover = (coverUrl: string, size: number = 200, https = false) => {
   if (!coverUrl) return 'https://imge.kugou.com/soft/collection/default.jpg';
   let cover = coverUrl;
   if (https) {
     cover = cover.replace('http://', 'https://');
   }
-  return cover.replace(/{size}/g, `${size}`).replace('c1.kgimg.com', 'imge.kugou.com');
+  let url = cover.replace(/{size}/g, `${size}`).replace('c1.kgimg.com', 'imge.kugou.com');
+  return getProxyUrl(url);
 };
 
 // 模糊搜索

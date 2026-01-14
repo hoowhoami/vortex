@@ -15,6 +15,7 @@ import { isDev } from './common';
 import { MUSIC_EFFECT_OPTIONS } from '@/constants';
 import { lyricsHandler } from './lyrics';
 import { nextTick } from 'vue';
+import { getProxyUrl } from './proxy';
 
 // 播放器核心
 // Howler.js
@@ -41,6 +42,7 @@ class Player {
     // 设置事件监听器
     this.setupEventListeners();
   }
+
   /**
    * 洗牌数组（Fisher-Yates）
    */
@@ -161,7 +163,7 @@ class Player {
         }
         const res = await getCloudSongUrl(song.hash);
         if (res.url) {
-          return res.url;
+          return getProxyUrl(res.url);
         }
       } catch (error) {
         console.error('❌ 获取云盘歌曲URL失败:', error);
@@ -201,7 +203,7 @@ class Player {
         if (res.status === 1) {
           if (res.url && res.url[0]) {
             console.log(`✅ 成功获取音质 ${quality} 的播放链接`);
-            return res.url[0];
+            return getProxyUrl(res.url[0]);
           }
         } else if (res.status === 2) {
           console.warn(`💰 音质/音效 ${quality} 需要购买，尝试下一个音质`);
