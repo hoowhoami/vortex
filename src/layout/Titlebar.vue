@@ -129,13 +129,15 @@ import {
 import { Search } from '@vicons/ionicons5';
 import { WhatshotTwotone } from '@vicons/material';
 import { useRouter } from 'vue-router';
-import { useUserStore } from '@/store';
+import { useUserStore, usePlayerStore } from '@/store';
 import { getSearchDefault, getSearchHot, getSearchSuggest } from '@/api';
 import { useGradientColor } from '@/hooks';
 import { debounce } from 'lodash-es';
+import player from '@/utils/player';
 
 const router = useRouter();
 const userStore = useUserStore();
+const playerStore = usePlayerStore();
 
 const { currentColor, getNextColor } = useGradientColor({
   steps: 5,
@@ -294,8 +296,11 @@ const logout = () => {
     content: '确定要退出登录吗？',
     positiveText: '确定',
     negativeText: '取消',
-    onPositiveClick: () => {
+    onPositiveClick: async () => {
+      await player.pause();
       userStore.clearUserInfo();
+      playerStore.clearPlaylist();
+      playerStore.resetPlaybackState();
       router.push({
         path: '/home',
         replace: true,
