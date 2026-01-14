@@ -13,7 +13,6 @@ export class LyricsHandler {
 
   // 桌面歌词状态
   private currentTime = ref<number>(0);
-  private currentSongHash = '';
 
   // 获取响应式数据的getter
   get data() {
@@ -56,9 +55,6 @@ export class LyricsHandler {
    */
   async getLyrics(hash: string): Promise<boolean> {
     try {
-      // 更新当前歌曲哈希
-      this.currentSongHash = hash;
-
       const lyricSearchResponse = await searchLyric({ hash });
 
       if (!lyricSearchResponse?.candidates?.length) {
