@@ -4,6 +4,7 @@ import vue from 'eslint-plugin-vue';
 import js from '@eslint/js';
 import globals from 'globals';
 import vueParser from 'vue-eslint-parser';
+import prettier from 'eslint-config-prettier';
 
 export default [
   {
@@ -63,17 +64,6 @@ export default [
     },
   },
   {
-    files: ['**/*.{js,ts,vue}'],
-    plugins: {
-      '@typescript-eslint': typescriptEslint,
-    },
-    rules: {
-      semi: ['error', 'always'],
-      quotes: ['error', 'single'],
-      'comma-dangle': ['error', 'always-multiline'],
-    },
-  },
-  {
     files: ['**/.eslintrc.{js,cjs}'],
     languageOptions: {
       globals: { ...globals.node },
@@ -81,4 +71,5 @@ export default [
       sourceType: 'commonjs',
     },
   },
+  prettier,
 ];
