@@ -1,14 +1,52 @@
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import tailwindcss from '@tailwindcss/vite';
-import path from 'path';
+import vue from '@vitejs/plugin-vue';
+import { resolve } from 'path';
+import eslint from 'vite-plugin-eslint';
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  base: './',
+  plugins: [
+    vue(),
+    eslint({
+      cache: false,
+      include: ['./src/**/*.js', './src/**/*.ts', './src/**/*.vue'],
+    }),
+  ],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': resolve(__dirname, 'src'),
     },
+  },
+  server: {
+    host: '0.0.0.0',
+    port: 3000,
+  },
+  build: {
+    outDir: 'dist',
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
+    cssCodeSplit: true,
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+      },
+      output: {
+        manualChunks: {
+          vendor: ['vue', 'vue-router', 'pinia'],
+          ui: ['naive-ui'],
+        },
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
+      },
+    },
+    sourcemap: false,
+    reportCompressedSize: false,
   },
 });
