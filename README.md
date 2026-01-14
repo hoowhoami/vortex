@@ -1,4 +1,4 @@
-# EchoMusic
+# Vortex
 
 一个基于 Vue 3 的现代音乐播放器应用。
 
