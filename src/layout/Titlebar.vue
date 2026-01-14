@@ -100,7 +100,7 @@
               <NAvatar
                 round
                 :size="25"
-                :src="userStore.isAuthenticated ? userStore.pic : undefined"
+                :src="userStore.isAuthenticated ? getProxyUrl(userStore.pic || '') : undefined"
               />
             </template>
             {{ userStore.isAuthenticated ? userStore.nickname : '未登录' }}
@@ -134,6 +134,7 @@ import { getSearchDefault, getSearchHot, getSearchSuggest } from '@/api';
 import { useGradientColor } from '@/hooks';
 import { debounce } from 'lodash-es';
 import player from '@/utils/player';
+import { getProxyUrl } from '@/utils';
 
 const router = useRouter();
 const userStore = useUserStore();
