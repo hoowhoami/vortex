@@ -1,5 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
-import { useUserStore, useAppStore } from '@/store';
+import { useUserStore } from '@/store';
 
 import Layout from '@/layout/Layout.vue';
 import Login from '@/views/Login.vue';
@@ -50,7 +50,6 @@ router.beforeEach(async (to: any, from: any, next: any) => {
 
   const userStore = useUserStore();
   const isAuthenticated = userStore.isAuthenticated;
-  const appStore = useAppStore();
 
   // 显示加载动画
   if (window.$loadingBar) {
@@ -58,9 +57,6 @@ router.beforeEach(async (to: any, from: any, next: any) => {
   }
 
   try {
-    // 获取 dfid
-    await appStore.fetchDfid();
-
     if (to.name === 'Login') {
       if (isAuthenticated) {
         await userStore.initUserExtends();

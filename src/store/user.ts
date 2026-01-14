@@ -1,6 +1,7 @@
 import {
   addPlaylist,
   deletePlaylist,
+  dfid,
   followSinger,
   getPlaylist,
   getUserFollow,
@@ -123,12 +124,12 @@ export const useUserStore = defineStore('user', {
         return;
       }
       this.extends = undefined;
-      // const dfidResult = await dfid();
-      // this.setUserInfo({
-      //   extends: {
-      //     dfid: dfidResult.dfid,
-      //   },
-      // });
+      const dfidResult = await dfid();
+      this.setUserInfo({
+        extends: {
+          dfid: dfidResult.dfid,
+        },
+      });
       const detailResult = await userDetail();
       this.setUserInfo({
         extends: {

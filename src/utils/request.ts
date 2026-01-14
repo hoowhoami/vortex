@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
-import { useAppStore, useUserStore } from '@/store';
+import { useUserStore } from '@/store';
 
 interface ApiResult<T> {
   status?: number;
@@ -29,14 +29,9 @@ request.interceptors.request.use(
     };
     // 添加用户信息
     const userStore = useUserStore();
-    const appStore = useAppStore();
     if (userStore.isAuthenticated) {
       // 添加 dfid, Token 和 userid
-      const cookieParams = `cookie=dfid=${encodeURIComponent(appStore.dfid || '')};token=${encodeURIComponent(userStore.token || '')};userid=${encodeURIComponent(userStore.userid || '')}`;
-      config.url += config.url?.includes('?') ? `&${cookieParams}` : `?${cookieParams}`;
-    } else {
-      // 添加 dfid
-      const cookieParams = `cookie=dfid=${encodeURIComponent(appStore.dfid || '')}`;
+      const cookieParams = `cookie=dfid=${encodeURIComponent(userStore.extends?.dfid || '')};token=${encodeURIComponent(userStore.token || '')};userid=${encodeURIComponent(userStore.userid || '')}`;
       config.url += config.url?.includes('?') ? `&${cookieParams}` : `?${cookieParams}`;
     }
     return config;
