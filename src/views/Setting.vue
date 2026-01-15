@@ -234,12 +234,6 @@
               </template>
               GitHub
             </NButton>
-            <NButton text type="primary" @click="openLink('mailto:support@example.com')">
-              <template #icon>
-                <NIcon><Mail /></NIcon>
-              </template>
-              反馈建议
-            </NButton>
           </div>
         </div>
       </NCard>
