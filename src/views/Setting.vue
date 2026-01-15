@@ -248,7 +248,6 @@ import {
   Palette,
   PlayerPlay,
   InfoCircle,
-  Mail,
   DeviceAudioTape,
   BrandGithub,
   Pacman,
